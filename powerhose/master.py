@@ -45,7 +45,6 @@ class Workers(object):
         worker = key = None
 
         while worker is None and tries < 3:
-            print 'choosing in ' + str(self._available.keys())
             try:
                 key = random.choice(self._available.keys())
                 worker = self._available[key]
@@ -60,8 +59,6 @@ class Workers(object):
         return worker
 
     def delete(self, worker):
-        print 'delete a worker ' + worker
-
         if worker in self._workers:
             self._workers.remove(worker)
 
@@ -72,15 +69,12 @@ class Workers(object):
             _worker = self._available[worker]
             _worker.close()
             del self._available[worker]
-        print 'got left ' + str(self._available.keys())
 
     def add(self, worker):
-        print 'adding a worker ' + worker.identity
         self._available[worker.identity] = worker
         self._workers.append(worker.identity)
 
     def release(self, worker):
-        print 'releasing'
         del self._busy[worker.identity]
         self._available[worker.identity] = worker
 
@@ -115,50 +109,35 @@ class WorkerRegistration(Thread):
             except zmq.ZMQError:
                 break
 
-            if events == {}:
-                print 'no event'
-
             for socket in events:
                 msg = socket.recv_multipart()
                 if msg[-2] == 'PING':
-                    print 'PONG => ' + socket.identity
                     if msg[-1] not in self.workers:
                         name = msg[-1]
                         # keep track of that worker
-                        print 'adding worker %s' % name
                         work = self.context.socket(zmq.REQ)
                         work.connect(name)
                         work.identity = name
                         self.workers.add(work)
-                        print 'REGISTERED => ' + socket.identity
 
                     socket.send('PONG')
                 elif msg[-2] == 'READY':
-                    if msg[-1] in self.workers:
-                        print 'already registered'
-                    else:
+                    if msg[-1] not in self.workers:
                         name = msg[-1]
                         # keep track of that worker
-                        print 'adding worker %s' % name
                         work = self.context.socket(zmq.REQ)
                         work.connect(name)
                         work.identity = name
                         self.workers.add(work)
-                        print 'REGISTERED => ' + socket.identity
 
                     socket.send('REGISTERED')
 
                 elif msg[-2] == 'REMOVE':
-                    print '<= REMOVE'
                     if msg[-1] in self.workers:
                         workers.delete(msg[-1])
-                        print 'REMOVED => ' + socket.identity
                     socket.send('REMOVED')
-                elif msg[-2] == 'PING' and msg[-1] in self.workers:
-                    print 'PONG => ' + socket.identity
-                    socket.send('PONG')
                 else:
-                    print 'not implem. ' + str(msg)
+                    socket.send('ERROR')
 
 
 class JobRunner(object):
@@ -185,12 +164,9 @@ class JobRunner(object):
         worker = None
         try:
             with self.workers.worker() as worker:
-                print 'WAKE => ' + worker.identity
                 try:
                     worker.send("WAKE", zmq.NOBLOCK)
                 except zmq.ZMQError, e:
-                    print 'wake failed ' + str(e)
-                    # we want to ditch this one !
                     raise TimeoutError()
 
                 poller = zmq.Poller()
@@ -200,26 +176,23 @@ class JobRunner(object):
                     try:
                         events = dict(poller.poll(timeout * 1000.))
                     except zmq.ZMQError:
-                        print 'interrupted'
                         break
 
+                    # XXX replace by an alarm to avoid
+                    # using cpu cycles
                     if events == {}:
-                        print 'nothing to see'
                         if time.time() - now > timeout:
                             raise TimeoutError()
 
                     for socket in events:
                         msg = socket.recv_multipart()
                         if msg == ['GIVE']:
-                            print 'GIVE <= ' + worker.identity
                             # the worker is ready to get some job done
-                            print 'JOB => ' + worker.identity
                             socket.send_multipart(["JOB", str(job_id),
                                                    job_data],
                                                   zmq.NOBLOCK)
                         elif msg[0] == 'JOBRES':
                             # we got a result
-                            print 'JOBRES <= ' + worker.identity
                             return msg[-1]
                         else:
                             raise NotImplementedError(str(msg))
