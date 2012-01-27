@@ -13,8 +13,9 @@ class RegisterError(Exception):
 
 
 class Pinger(threading.Thread):
-    def __init__(self, socket, locker, failed, timeout=1.):
+    def __init__(self, identity, socket, locker, failed, timeout=1.):
         threading.Thread.__init__(self)
+        self.identity = identity
         self.socket = socket
         self.locker = locker
         self.running = False
@@ -40,15 +41,17 @@ class Pinger(threading.Thread):
 
             with self.locker:
                 try:
-                    self.socket.send('PING', zmq.NOBLOCK)
+                    self.socket.send_multipart(['PING', self.identity], zmq.NOBLOCK)
                 except zmq.ZMQError, e:
                     print 'could not ping ' + str(e)
                     self.running = False
                     break  # interrupted
 
                 try:
-                    events = dict(self.poller.poll(self.timeout))
-                except zmq.ZMQError:
+                    events = dict(self.poller.poll(100))  #self.timeout))
+                except zmq.ZMQError, e:
+                    print 'pinging failed'
+                    self.running = False
                     break  # interrupted
 
                 for socket in events:
@@ -86,11 +89,14 @@ class Worker(object):
         self.poller = zmq.Poller()
         self.poller.register(self.work, zmq.POLLIN)
         self.locker = threading.RLock()
-        self.pinger = Pinger(self.master, self.locker, self.failed)
+        self.pinger = Pinger(self.identity, self.master, self.locker, self.failed)
 
     def failed(self):
         print 'ping failed lets try to reconnect and die'
-        self._msg('REMOVE', 'REMOVED')
+        try:
+            self._msg('REMOVE', 'REMOVED')
+        except RegisterError:
+            pass
         self.stop()
 
     def register(self):
@@ -109,20 +115,31 @@ class Worker(object):
 
                 # ping the master we are online, with an ID
                 try:
-                    print '%s => %s' % (req, self.master.identity)
+                    print '%s => %s' % (req, self.identity)
                     self.master.send_multipart([req, self.identity], zmq.NOBLOCK)
-                except zmq.ZMQError:
-                    raise RegisterError()
-                try:
-                    poller.poll(self.timeout)
-                except zmq.ZMQError:
+                except zmq.ZMQError, e:
+                    print 'sending failed'
                     raise RegisterError()
 
-                res = self.master.recv()
-                if res != rep:
-                    raise RegisterError(res)
-                print '%s <= %s' % (rep, self.master.identity)
+                try:
+                    events = dict(poller.poll(self.timeout))
+                except zmq.ZMQError:
+                    print 'polling failed'
+                    raise RegisterError()
+
+                if events == {}:
+                    # a well
+                    print 'no answer'
+                    raise RegisterError()
+                else:
+                    for socket in events:
+                        print 'answer, reading'
+                        res = socket.recv()
+                        if res != rep:
+                            raise RegisterError(res)
+                        print '%s <= %s' % (rep, socket.identity)
         finally:
+            print 'reenable the pinger'
             self.pinger.enable()
 
     def stop(self):

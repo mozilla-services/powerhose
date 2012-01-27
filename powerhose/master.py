@@ -19,8 +19,8 @@ class Workers(object):
 
     def __init__(self, timeout=5.):
         self.lock = RLock()
-        self._available = PriorityQueue()   # XXX replace with a dict that locks
-        self._busy = []
+        self._available = {}
+        self._busy = {}
         self.timeout = timeout
         self._workers = []
 
@@ -28,7 +28,7 @@ class Workers(object):
         return worker in self._workers
 
     def __len__(self):
-        return self._available.qsize() + len(self._busy)
+        return len(self._available) + len(self._busy)
 
     @contextlib.contextmanager
     def worker(self):
@@ -44,34 +44,48 @@ class Workers(object):
 
         # need to catch the empty exception
         tries = 0
-        worker = None
+        worker = key = None
 
-        while worker is None and worker not in self._workers and tries < 3:
+        while worker is None and tries < 3:
+            print 'choosing in ' + str(self._available.keys())
             try:
-                __, worker = self._available.get(timeout=timeout)
-            except Empty:
+                key = random.choice(self._available.keys())
+                worker = self._available[key]
+                del self._available[key]
+            except IndexError:
                 tries += 1
-                print 'try again'
 
         if worker is None:
             raise ValueError()
 
-        self._busy.append(worker)
+        self._busy[key] = worker
         return worker
 
     def delete(self, worker):
         print 'delete a worker ' + worker
-        self._workers.remove(worker)
+
+        if worker in self._workers:
+            self._workers.remove(worker)
+
+        if worker in self._busy:
+            self._busy[worker]
+
+        if worker in self._available:
+            _worker = self._available[worker]
+            _worker.close()
+            del self._available[worker]
+        print 'got left ' + str(self._available.keys())
+
 
     def add(self, worker):
         print 'adding a worker ' + worker.identity
-        self._available.put((time.time(), worker))
+        self._available[worker.identity] = worker
         self._workers.append(worker.identity)
 
     def release(self, worker):
         print 'releasing'
-        self._busy.remove(worker)
-        self._available.put((time.time(), worker))
+        del self._busy[worker.identity]
+        self._available[worker.identity] = worker
 
 
 class WorkerRegistration(Thread):
@@ -109,8 +123,18 @@ class WorkerRegistration(Thread):
 
             for socket in events:
                 msg = socket.recv_multipart()
-                if msg == ['PING']:
+                if msg[-2] == 'PING':
                     print 'PONG => ' + socket.identity
+                    if msg[-1] not in self.workers:
+                        name = msg[-1]
+                        # keep track of that worker
+                        print 'adding worker %s' % name
+                        work = self.context.socket(zmq.REQ)
+                        work.connect(name)
+                        work.identity = name
+                        self.workers.add(work)
+                        print 'REGISTERED => ' + socket.identity
+
                     socket.send('PONG')
                 elif msg[-2] == 'READY':
                     if msg[-1] in self.workers:
@@ -150,6 +174,7 @@ class JobRunner(object):
             try:
                 return self._execute(job_id, job_data, timeout)
             except TimeoutError:
+
                 time.sleep(0.1)
 
         raise TimeoutError()
@@ -160,45 +185,54 @@ class JobRunner(object):
         # errors out if we don't have any worker registered
         #if len(self.workers) == 0:
         #    raise ValueError("No Workers!")
-        with self.workers.worker() as worker:
-            print 'WAKE => ' + worker.identity
-            try:
-                worker.send("WAKE", zmq.NOBLOCK)  # XXX if this fails we want to try another one
-            except zmq.ZMQError:
-                print 'wake failed'
-                raise TimeoutError()
-
-            poller = zmq.Poller()
-            poller.register(worker, zmq.POLLIN)
-
-            while True:
+        worker = None
+        try:
+            with self.workers.worker() as worker:
+                print 'WAKE => ' + worker.identity
                 try:
-                    events = dict(poller.poll(timeout*1000.))
-                except zmq.ZMQError:
-                    print 'interrupted'
-                    break # interrupted
+                    worker.send("WAKE", zmq.NOBLOCK)  # XXX if this fails we want to try another one
+                except zmq.ZMQError, e:
+                    print 'wake failed ' + str(e)
+                    # we want to ditch this one !
+                    raise TimeoutError()
 
-                if events == {}:
-                    print 'nothing to see'
-                    if time.time() - now > timeout:
-                        raise TimeoutError()
+                poller = zmq.Poller()
+                poller.register(worker, zmq.POLLIN)
 
-                for socket in events:
-                    msg = socket.recv_multipart()
-                    if msg == ['GIVE']:
-                        print 'GIVE <= ' + worker.identity
-                        # the worker is ready to get some job done
-                        print 'JOB => ' + worker.identity
-                        socket.send_multipart(["JOB", str(job_id), job_data],
-                                               zmq.NOBLOCK)
-                    elif msg[0] == 'JOBRES':
-                        # we got a result
-                        print 'JOBRES <= ' + worker.identity
-                        return msg[-1]
-                    else:
-                        raise NotImplementedError(str(msg))
+                while True:
+                    try:
+                        events = dict(poller.poll(timeout*1000.))
+                    except zmq.ZMQError:
+                        print 'interrupted'
+                        break # interrupted
 
-            raise TimeoutError()
+                    if events == {}:
+                        print 'nothing to see'
+                        if time.time() - now > timeout:
+                            raise TimeoutError()
+
+                    for socket in events:
+                        msg = socket.recv_multipart()
+                        if msg == ['GIVE']:
+                            print 'GIVE <= ' + worker.identity
+                            # the worker is ready to get some job done
+                            print 'JOB => ' + worker.identity
+                            socket.send_multipart(["JOB", str(job_id), job_data],
+                                                zmq.NOBLOCK)
+                        elif msg[0] == 'JOBRES':
+                            # we got a result
+                            print 'JOBRES <= ' + worker.identity
+                            return msg[-1]
+                        else:
+                            raise NotImplementedError(str(msg))
+
+                raise TimeoutError()
+        except:
+            if worker is not None:
+                # killing this worker - it can come back on the next ping
+                workers.delete(worker.identity)
+            raise
+
 
 
 if __name__ == '__main__':
@@ -208,9 +242,9 @@ if __name__ == '__main__':
     registration.start()
 
     try:
-        #while len(workers) < 1:
-        #    print 'waiting for workers'
-        #    time.sleep(1.)
+        while len(workers) < 1:
+            print 'waiting for workers'
+            time.sleep(1.)
 
         while True:
             print runner.execute(1, "SOMEDATA")
