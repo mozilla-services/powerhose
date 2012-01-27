@@ -1,0 +1,10 @@
+
+if the worker dies 
+- tell the master if it's not a -9
+- something external can decide to respawn it (daemontools)
+
+
+if the master dies.
+- the worker have an heartbeat, see that the master is dead, try to reconnect for 5s then exit
+
+
