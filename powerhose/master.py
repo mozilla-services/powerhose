@@ -2,7 +2,6 @@ import time
 import random
 from threading import Thread, RLock
 import contextlib
-from gevent.queue import PriorityQueue, Empty
 import zmq
 
 
@@ -11,7 +10,6 @@ class TimeoutError(Exception):
 
 
 _ENDPOINT = "ipc://master-routing.ipc"
-_WORKPOINT = "ipc://%s-routing.ipc"
 _WEIGHTS = range(10)
 
 
@@ -76,7 +74,6 @@ class Workers(object):
             del self._available[worker]
         print 'got left ' + str(self._available.keys())
 
-
     def add(self, worker):
         print 'adding a worker ' + worker.identity
         self._available[worker.identity] = worker
@@ -116,7 +113,7 @@ class WorkerRegistration(Thread):
             try:
                 events = dict(poller.poll(1000))
             except zmq.ZMQError:
-                break # interrupted
+                break
 
             if events == {}:
                 print 'no event'
@@ -190,7 +187,7 @@ class JobRunner(object):
             with self.workers.worker() as worker:
                 print 'WAKE => ' + worker.identity
                 try:
-                    worker.send("WAKE", zmq.NOBLOCK)  # XXX if this fails we want to try another one
+                    worker.send("WAKE", zmq.NOBLOCK)
                 except zmq.ZMQError, e:
                     print 'wake failed ' + str(e)
                     # we want to ditch this one !
@@ -201,10 +198,10 @@ class JobRunner(object):
 
                 while True:
                     try:
-                        events = dict(poller.poll(timeout*1000.))
+                        events = dict(poller.poll(timeout * 1000.))
                     except zmq.ZMQError:
                         print 'interrupted'
-                        break # interrupted
+                        break
 
                     if events == {}:
                         print 'nothing to see'
@@ -217,8 +214,9 @@ class JobRunner(object):
                             print 'GIVE <= ' + worker.identity
                             # the worker is ready to get some job done
                             print 'JOB => ' + worker.identity
-                            socket.send_multipart(["JOB", str(job_id), job_data],
-                                                zmq.NOBLOCK)
+                            socket.send_multipart(["JOB", str(job_id),
+                                                   job_data],
+                                                  zmq.NOBLOCK)
                         elif msg[0] == 'JOBRES':
                             # we got a result
                             print 'JOBRES <= ' + worker.identity
@@ -232,7 +230,6 @@ class JobRunner(object):
                 # killing this worker - it can come back on the next ping
                 workers.delete(worker.identity)
             raise
-
 
 
 if __name__ == '__main__':

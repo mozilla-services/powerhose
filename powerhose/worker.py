@@ -1,5 +1,4 @@
 import time
-import random
 import sys
 import zmq
 import threading
@@ -7,6 +6,7 @@ import threading
 
 endpoint = "ipc://master-routing.ipc"
 workpoint = "ipc://%s-routing.ipc"
+
 
 class RegisterError(Exception):
     pass
@@ -41,14 +41,15 @@ class Pinger(threading.Thread):
 
             with self.locker:
                 try:
-                    self.socket.send_multipart(['PING', self.identity], zmq.NOBLOCK)
+                    self.socket.send_multipart(['PING', self.identity],
+                                                zmq.NOBLOCK)
                 except zmq.ZMQError, e:
                     print 'could not ping ' + str(e)
                     self.running = False
                     break  # interrupted
 
                 try:
-                    events = dict(self.poller.poll(100))  #self.timeout))
+                    events = dict(self.poller.poll(100))   # self.timeout))
                 except zmq.ZMQError, e:
                     print 'pinging failed'
                     self.running = False
@@ -89,7 +90,8 @@ class Worker(object):
         self.poller = zmq.Poller()
         self.poller.register(self.work, zmq.POLLIN)
         self.locker = threading.RLock()
-        self.pinger = Pinger(self.identity, self.master, self.locker, self.failed)
+        self.pinger = Pinger(self.identity, self.master, self.locker,
+                             self.failed)
 
     def failed(self):
         print 'ping failed lets try to reconnect and die'
@@ -116,8 +118,9 @@ class Worker(object):
                 # ping the master we are online, with an ID
                 try:
                     print '%s => %s' % (req, self.identity)
-                    self.master.send_multipart([req, self.identity], zmq.NOBLOCK)
-                except zmq.ZMQError, e:
+                    self.master.send_multipart([req, self.identity],
+                                               zmq.NOBLOCK)
+                except zmq.ZMQError:
                     print 'sending failed'
                     raise RegisterError()
 
@@ -157,7 +160,7 @@ class Worker(object):
             try:
                 events = dict(self.poller.poll(self.timeout))
             except zmq.ZMQError:
-                break # interrupted
+                break
 
             for socket in events:
                 msg = socket.recv_multipart()
@@ -183,6 +186,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         worker.stop()
         print 'bye'
-
-
-
