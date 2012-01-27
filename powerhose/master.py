@@ -2,6 +2,7 @@ import time
 import random
 from threading import Thread, RLock
 import contextlib
+from gevent.queue import Queue
 
 import zmq
 
@@ -14,10 +15,20 @@ _ENDPOINT = "ipc://master-routing.ipc"
 _WORKPOINT = "ipc://%s-routing.ipc"
 
 
-class Workers(dict):
+class Workers(object):
 
-    def __init__(self):
+    def __init__(self, timeout=1.):
         self.lock = RLock()
+        self._available = Queue()
+        self._busy = []
+        self.timeout = timeout
+        self._workers = []
+
+    def __contains__(self, worker):
+        return worker in self._workers
+
+    def __len__(self):
+        return self._available.qsize() + len(self._busy)
 
     @contextlib.contextmanager
     def worker(self):
@@ -25,26 +36,19 @@ class Workers(dict):
         yield _worker
         self.release(_worker)
 
-    def acquire(self):
-        with self.lock:
-            key = random.choice(workers.keys())
-            worker = workers[key]
-            del workers[key]
-            return worker
+    def acquire(self, timeout=1.):
+        # need to catch the empty exception
+        worker = self._available.get(self.timeout)
+        self._busy.append(worker)
+        return worker
 
     def add(self, worker):
-        with self.lock:
-            workers[worker.identity] = worker
+        self._available.put(worker)
+        self._workers.append(worker.identity)
 
     def release(self, worker):
-        with self.lock:
-            workers[worker.identity] = worker
-
-    def delete(self, name):
-        with self.lock:
-            worker = workers[name]
-            worker.close()
-            del workers[name]
+        self._busy.remove(worker)
+        self._available.put(worker)
 
 
 class WorkerRegistration(Thread):
