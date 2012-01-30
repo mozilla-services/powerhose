@@ -13,18 +13,20 @@ class RegisterError(Exception):
 
 
 class Pinger(threading.Thread):
-    def __init__(self, identity, socket, locker, failed, timeout=1., duration=5.):
+    def __init__(self, identity, socket, locker, fail_callable,
+                 duration=5., max_fails=10.):
         threading.Thread.__init__(self)
         self.duration = duration
         self.identity = identity
         self.socket = socket
         self.locker = locker
         self.running = False
-        self.failed = failed
+        self.fail_callable = fail_callable
+        self.max_fails = max_fails
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
-        self.timeout = timeout
         self.disabled = False
+        self.unresponsive = False
 
     def disable(self):
         self.disabled = True
@@ -34,8 +36,14 @@ class Pinger(threading.Thread):
 
     def run(self):
         self.running = True
+        num_failed = 0
 
         while self.running:
+            if num_failed >= self.max_fails:
+                self.unresponsive = True
+                self.running = False
+                break
+
             if self.disabled:
                 time.sleep(1.)
                 continue
@@ -45,23 +53,27 @@ class Pinger(threading.Thread):
                     self.socket.send_multipart(['PING', self.identity],
                                                 zmq.NOBLOCK)
                 except zmq.ZMQError, e:
-                    self.running = False
-                    break  # interrupted
+                    num_failed += 1
+                    continue
 
                 try:
-                    events = dict(self.poller.poll(100))   # self.timeout))
+                    events = dict(self.poller.poll(self.duration * 1000))
                 except zmq.ZMQError, e:
-                    self.running = False
-                    break  # interrupted
+                    self.num_failed += 1
+                    continue
 
-                for socket in events:
-                    res = socket.recv()
-                    if res != 'PONG':
-                        self.running = False
+                if len(events) == 0:
+                    self.fail_callable()
+                    num_failed += 1
+                else:
+                    for socket in events:
+                        res = socket.recv()
+                        if res != 'PONG':
+                            self.running = False
+                            self.fail_callable()
+                            num_failed += 1
 
             time.sleep(self.duration)
-
-        self.failed()
 
     def stop(self):
         if not self.running:
@@ -140,7 +152,7 @@ class Worker(object):
         self.register()
         self.pinger.start()
 
-        while self.running:
+        while self.running and not self.pinger.unresponsive:
             try:
                 events = dict(self.poller.poll(self.timeout))
             except zmq.ZMQError:
