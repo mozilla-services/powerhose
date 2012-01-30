@@ -3,6 +3,8 @@ import sys
 import zmq
 import threading
 
+from powerhose.util import serialize
+
 
 endpoint = "ipc://master-routing.ipc"
 workpoint = "ipc://%s-routing.ipc"
@@ -48,9 +50,9 @@ class Pinger(threading.Thread):
 
             with self.locker:
                 try:
-                    self.socket.send(':::'.join(['PING', self.identity]),
-                                     zmq.NOBLOCK)
-                except zmq.ZMQError, e:
+                    data = serialize('PING', self.identity)
+                    self.socket.send(data, zmq.NOBLOCK)
+                except zmq.ZMQError:
                     num_failed += 1
                     continue
 

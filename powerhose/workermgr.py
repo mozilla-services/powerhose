@@ -3,6 +3,7 @@ import random
 from threading import Thread, RLock
 import contextlib
 import zmq
+from powerhose.util import serialize, unserialize
 
 
 class TimeoutError(Exception):
@@ -110,8 +111,10 @@ class WorkerRegistration(Thread):
                 break
 
             for socket in events:
-                msg = socket.recv().split(':::')
-                print msg
+                msg = unserialize(socket.recv())
+                if len(msg) < 2:
+                    # XXX log
+                    socket.send('ERROR')
 
                 if msg[-2] == 'PING':
                     if msg[-1] not in self.workers:

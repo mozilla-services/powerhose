@@ -5,6 +5,7 @@ import contextlib
 import zmq
 
 from powerhose.workermgr import Workers, WorkerRegistration
+from powerhose.util import serialize, unserialize
 
 
 class TimeoutError(Exception):
@@ -65,12 +66,11 @@ class JobRunner(object):
                             raise TimeoutError()
 
                     for socket in events:
-                        msg = socket.recv().split(':::')
+                        msg = unserialize(socket.recv())
                         if msg == ['GIVE']:
                             # the worker is ready to get some job done
-                            socket.send(':::'.join(["JOB", str(job_id),
-                                                    job_data]),
-                                        zmq.NOBLOCK)
+                            data = serialize("JOB", str(job_id), job_data)
+                            socket.send(data, zmq.NOBLOCK)
 
                         elif msg[0] == 'JOBRES':
                             # we got a result
