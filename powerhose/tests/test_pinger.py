@@ -1,8 +1,9 @@
 import unittest
-from powerhose.worker import Pinger
 import zmq
 import threading
 import time
+
+from powerhose.pinger import Pinger
 
 
 _ENDPOINT = 'ipc:///tmp/tests.ipc'
