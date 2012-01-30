@@ -2,12 +2,7 @@ import time
 import sys
 import zmq
 import threading
-
 from powerhose.pinger import Pinger
-
-
-endpoint = "ipc://master-routing.ipc"
-workpoint = "ipc://%s-routing.ipc"
 
 
 class RegisterError(Exception):
@@ -16,7 +11,7 @@ class RegisterError(Exception):
 
 class Worker(object):
 
-    def __init__(self, identity, timeout=1.):
+    def __init__(self, endpoint, identity, target, timeout=1.):
         self.identity = identity
         self.ctx = zmq.Context()
         self.timeout = timeout * 1000
@@ -31,6 +26,7 @@ class Worker(object):
         self.locker = threading.RLock()
         self.pinger = Pinger(self.identity, self.master, self.locker,
                              self.failed)
+        self.target = target
 
     def failed(self):
         print '**ping failed lets die'
@@ -98,16 +94,12 @@ class Worker(object):
                 elif msg[0] == 'JOB':
                     # do the job and send the result
                     print '%s is doing some work' % self.identity
-                    socket.send_multipart(["JOBRES", msg[1], "RESULT"])
+                    try:
+                        res = self.target(msg[1:])
+                    except Exception , e:
+                        # XXX log the error
+                        res = str(e)
+
+                    socket.send_multipart(["JOBRES", msg[1], res])
 
         self._msg('REMOVE', 'REMOVED')
-
-
-if __name__ == '__main__':
-
-    try:
-        worker = Worker(workpoint % sys.argv[1])
-        worker.run()
-        worker.stop()
-    except KeyboardInterrupt:
-        worker.stop()
