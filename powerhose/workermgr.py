@@ -110,7 +110,9 @@ class WorkerRegistration(Thread):
                 break
 
             for socket in events:
-                msg = socket.recv_multipart()
+                msg = socket.recv().split(':::')
+                print msg
+
                 if msg[-2] == 'PING':
                     if msg[-1] not in self.workers:
                         name = msg[-1]

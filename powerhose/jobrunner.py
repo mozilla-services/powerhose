@@ -65,12 +65,13 @@ class JobRunner(object):
                             raise TimeoutError()
 
                     for socket in events:
-                        msg = socket.recv_multipart()
+                        msg = socket.recv().split(':::')
                         if msg == ['GIVE']:
                             # the worker is ready to get some job done
-                            socket.send_multipart(["JOB", str(job_id),
-                                                   job_data],
-                                                  zmq.NOBLOCK)
+                            socket.send(':::'.join(["JOB", str(job_id),
+                                                    job_data]),
+                                        zmq.NOBLOCK)
+
                         elif msg[0] == 'JOBRES':
                             # we got a result
                             return msg[-1]

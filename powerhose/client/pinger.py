@@ -48,8 +48,8 @@ class Pinger(threading.Thread):
 
             with self.locker:
                 try:
-                    self.socket.send_multipart(['PING', self.identity],
-                                                zmq.NOBLOCK)
+                    self.socket.send(':::'.join(['PING', self.identity]),
+                                     zmq.NOBLOCK)
                 except zmq.ZMQError, e:
                     num_failed += 1
                     continue

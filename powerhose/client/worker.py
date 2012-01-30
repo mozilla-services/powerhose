@@ -3,7 +3,7 @@ import sys
 import zmq
 import threading
 
-from powerhose.pinger import Pinger
+from powerhose.client.pinger import Pinger
 
 
 class RegisterError(Exception):
@@ -50,8 +50,8 @@ class Worker(object):
 
                 # ping the master we are online, with an ID
                 try:
-                    self.master.send_multipart([req, self.identity],
-                                               zmq.NOBLOCK)
+                    self.master.send(':::'.join([req, self.identity]),
+                                     zmq.NOBLOCK)
                 except zmq.ZMQError:
                     raise RegisterError()
 
@@ -88,7 +88,7 @@ class Worker(object):
                 break
 
             for socket in events:
-                msg = socket.recv_multipart()
+                msg = socket.recv().split(':::')
                 if msg == ['WAKE']:
                     # yeah I can work
                     socket.send('GIVE')
@@ -101,6 +101,6 @@ class Worker(object):
                         # XXX log the error
                         res = str(e)
 
-                    socket.send_multipart(["JOBRES", msg[1], res])
+                    socket.send(':::'.join(["JOBRES", msg[1], res]))
 
         self._msg('REMOVE', 'REMOVED')

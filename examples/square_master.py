@@ -27,6 +27,8 @@ if __name__ == '__main__':
         runner.stop()
         print 'bye'
     except Exception, e:
+        import pdb; pdb.set_trace()
+        print str(e)
         print 'Something went wrong (are we still running workers?)'
         runner.stop()
         print 'bye'
