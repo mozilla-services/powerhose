@@ -45,6 +45,7 @@ class JobRunner(object):
         worker = None
         try:
             with self.workers.worker() as worker:
+                print 'sending WAKE'
                 try:
                     worker.send("WAKE", zmq.NOBLOCK)
                 except zmq.ZMQError, e:
@@ -66,16 +67,22 @@ class JobRunner(object):
                             raise TimeoutError()
 
                     for socket in events:
-                        msg = unserialize(socket.recv())
+                        msg = socket.recv()
+                        print 'received ' + str(msg)
+
+                        msg = unserialize(msg)
+
                         if msg == ['GIVE']:
                             # the worker is ready to get some job done
                             data = serialize("JOB", str(job_id), job_data)
+                            print 'sending ' + data
                             socket.send(data, zmq.NOBLOCK)
 
                         elif msg[0] == 'JOBRES':
                             # we got a result
                             return msg[-1]
                         else:
+                            print 'unkown stuff'
                             raise NotImplementedError(str(msg))
 
                 raise TimeoutError()

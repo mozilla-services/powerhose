@@ -3,7 +3,7 @@ import time
 import sys
 import random
 
-endpoint = "ipc://master-routing.ipc"
+endpoint = "ipc:///tmp/master-routing.ipc"
 
 
 if __name__ == '__main__':
@@ -27,7 +27,6 @@ if __name__ == '__main__':
         runner.stop()
         print 'bye'
     except Exception, e:
-        import pdb; pdb.set_trace()
         print str(e)
         print 'Something went wrong (are we still running workers?)'
         runner.stop()

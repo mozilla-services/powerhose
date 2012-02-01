@@ -10,7 +10,7 @@ class TimeoutError(Exception):
     pass
 
 
-_ENDPOINT = "ipc://master-routing.ipc"
+_ENDPOINT = "ipc:///tmp/master-routing.ipc"
 _WEIGHTS = range(10)
 
 
@@ -112,6 +112,8 @@ class WorkerRegistration(Thread):
 
             for socket in events:
                 msg = unserialize(socket.recv())
+                print msg
+
                 if len(msg) < 2:
                     # XXX log
                     socket.send('ERROR')
@@ -135,6 +137,7 @@ class WorkerRegistration(Thread):
                         work.identity = name
                         self.workers.add(work)
 
+                    print 'Registered'
                     socket.send('REGISTERED')
 
                 elif msg[-2] == 'REMOVE':
