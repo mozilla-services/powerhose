@@ -45,12 +45,14 @@ namespace powerhose
   void unserialize(string* data, vector<string>* res) {
     size_t found = 0;
     int current = 0;
+    int size;
     string sep = ":::";
 
     while (found != string::npos) {
-        found = data->find_first_of(sep, current);
+        found = data->find_first_of(sep, current + 1);
         if (found > 0) {
-            res->push_back(data->substr(current, found));
+            size = found - current;
+            res->push_back(data->substr(current, size));
             current = found + sep.size();
         }
     }

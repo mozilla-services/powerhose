@@ -37,8 +37,8 @@ namespace powerhose
         zmq_pollitem_t poll_items[1];
         void callMaster(string* request, string* response);
         const char* receiverChannel;
-    protected:        
-        void execute(vector<string>* vreq,  vector<string>* vres);
+    protected:
+        virtual void execute(vector<string>* vreq,  vector<string>* vres);
 
     public:
        Worker(const char* receiverChannel, const char* endPoint);
