@@ -12,6 +12,7 @@
 #include <map>
 #include <sstream>
 #include "util.h"
+#include <pthread.h>
 
 using namespace zmq;
 using namespace std;
@@ -33,18 +34,22 @@ namespace powerhose
         bool running;
         context_t* ctx;
         socket_t* receiver;
-        socket_t* endpoint;
         zmq_pollitem_t poll_items[1];
-        void callMaster(string* request, string* response);
-        const char* receiverChannel;
+        void reg();
+
     protected:
         virtual void execute(vector<string>* vreq,  vector<string>* vres);
 
     public:
        Worker(const char* receiverChannel, const char* endPoint);
        ~Worker();
-       void reg();
        void run();
+
+       const char* receiverChannel;
+       socket_t* endpoint;
+       bool heartbeatRunning;
+       bool heartbeatFailed;
+       bool heartbeatDelay;
   };
 
 }

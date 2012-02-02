@@ -3,7 +3,7 @@ from powerhose.client.worker import Worker
 
 import time
 
-endpoint = "ipc://master-routing.ipc"
+endpoint = "ipc:///tmp/master-routing.ipc"
 workpoint = "ipc://worker-routing.ipc"
 
 
