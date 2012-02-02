@@ -37,8 +37,8 @@ Registering a worker
 ::
 
    W                          M
-   --- READY + endoint  -->   Register the Worker
-   <-- REGISTERED       ---
+   --- PING + endoint  -->   Register the Worker
+   <-- PONG            ---
 
 
 A worker can also unregister itself::

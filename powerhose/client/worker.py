@@ -39,7 +39,7 @@ class Worker(object):
         self.stop()
 
     def register(self):
-        self._msg('READY', 'REGISTERED')
+        self._msg('PING', 'PONG')
         self.registered = True
 
     def _msg(self, req, rep):

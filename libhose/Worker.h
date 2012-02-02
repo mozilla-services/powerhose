@@ -30,7 +30,6 @@ namespace powerhose
   class Worker {
 
     private:
-        int timeout;
         bool running;
         context_t* ctx;
         socket_t* receiver;
@@ -44,6 +43,8 @@ namespace powerhose
        Worker(const char* receiverChannel, const char* endPoint);
        ~Worker();
        void run();
+
+       int timeout;
 
        const char* receiverChannel;
        socket_t* endpoint;

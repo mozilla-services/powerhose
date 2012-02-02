@@ -141,11 +141,11 @@ namespace powerhose
       // register to the master
       cout << "registering" << endl;
       vector<string> vreq;
-      vreq.push_back("READY");
+      vreq.push_back("PING");
       vreq.push_back(this->receiverChannel);
       string req;
       serialize(&vreq, &req);
-      string resp = "REGISTERED";
+      string resp = "PONG";
       callSocket(&req, &resp, this->endpoint, this->timeout);
   }
 

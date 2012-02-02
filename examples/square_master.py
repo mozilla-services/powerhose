@@ -14,15 +14,15 @@ if __name__ == '__main__':
     try:
         # wait to have at least 1 worker
         print 'Waiting for some workers to register -- run square_worker.py'
-        while len(runner.workers) == 0:
+        while len(runner.workers) < 1:
             sys.stdout.write('.')
             sys.stdout.flush()
             time.sleep(1.)
 
-        print
         while True:
             print runner.execute('1', str(random.randrange(1000)))
 
+        runner.stop()
     except KeyboardInterrupt:
         runner.stop()
         print 'bye'

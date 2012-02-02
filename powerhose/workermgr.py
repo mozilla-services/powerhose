@@ -119,27 +119,15 @@ class WorkerRegistration(Thread):
                     socket.send('ERROR')
 
                 if msg[-2] == 'PING':
-                    if msg[-1] not in self.workers:
-                        name = msg[-1]
-                        # keep track of that worker
-                        work = self.context.socket(zmq.REQ)
-                        work.connect(name)
-                        work.identity = name
-                        self.workers.add(work)
-
+                    if msg[-1] in self.workers:
+                        return
+                    name = msg[-1]
+                    # keep track of that worker
+                    work = self.context.socket(zmq.REQ)
+                    work.connect(name)
+                    work.identity = name
+                    self.workers.add(work)
                     socket.send('PONG')
-                elif msg[-2] == 'READY':
-                    if msg[-1] not in self.workers:
-                        name = msg[-1]
-                        # keep track of that worker
-                        work = self.context.socket(zmq.REQ)
-                        work.connect(name)
-                        work.identity = name
-                        self.workers.add(work)
-
-                    print 'Registered'
-                    socket.send('REGISTERED')
-
                 elif msg[-2] == 'REMOVE':
                     if msg[-1] in self.workers:
                         workers.delete(msg[-1])

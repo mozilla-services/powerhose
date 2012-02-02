@@ -11,6 +11,11 @@ from powerhose.util import serialize, unserialize
 class TimeoutError(Exception):
     pass
 
+
+class ExecutionError(Exception):
+    pass
+
+
 _ENDPOINT = "ipc://master-routing.ipc"
 
 
@@ -30,41 +35,37 @@ class JobRunner(object):
         for i in range(self.retries):
             try:
                 return self._execute(job_id, job_data, timeout)
-            except TimeoutError:
-
-                time.sleep(0.1)
+            except (TimeoutError, ExecutionError):
+                pass
 
         raise TimeoutError()
 
+    # XXX timeout is for each poll()
     def _execute(self, job_id, job_data, timeout=1.):
-        now = time.time()
-
-        # errors out if we don't have any worker registered
-        #if len(self.workers) == 0:
-        #    raise ValueError("No Workers!")
         worker = None
+        timeout *= 1000.   # timeout is in ms
+        spent = 0
         try:
             with self.workers.worker() as worker:
                 print 'sending WAKE'
                 try:
                     worker.send("WAKE", zmq.NOBLOCK)
                 except zmq.ZMQError, e:
-                    raise TimeoutError()
+                    raise ExecutionError(str(e))
 
                 poller = zmq.Poller()
                 poller.register(worker, zmq.POLLIN)
 
                 while True:
-                    try:
-                        events = dict(poller.poll(timeout * 1000.))
-                    except zmq.ZMQError:
-                        break
 
-                    # XXX replace by an alarm to avoid
-                    # using cpu cycles
+                    try:
+                        events = dict(poller.poll(timeout))
+                    except zmq.ZMQError, e:
+                        raise ExecutionError(str(e))
+
                     if events == {}:
-                        if time.time() - now > timeout:
-                            raise TimeoutError()
+                        print 'nothing'
+                        raise TimeoutError()
 
                     for socket in events:
                         msg = socket.recv()
@@ -76,18 +77,19 @@ class JobRunner(object):
                             # the worker is ready to get some job done
                             data = serialize("JOB", str(job_id), job_data)
                             print 'sending ' + data
-                            socket.send(data, zmq.NOBLOCK)
-
+                            try:
+                                socket.send(data, zmq.NOBLOCK)
+                            except zmq.ZMQError, e:
+                                raise ExecutionError(str(e))
                         elif msg[0] == 'JOBRES':
                             # we got a result
                             return msg[-1]
                         else:
-                            print 'unkown stuff'
                             raise NotImplementedError(str(msg))
 
-                raise TimeoutError()
-        except:
+        except Exception, e:
             if worker is not None:
                 # killing this worker - it can come back on the next ping
                 self.workers.delete(worker.identity)
-            raise
+
+            raise ExecutionError(str(e))
