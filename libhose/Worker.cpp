@@ -183,22 +183,20 @@ namespace powerhose
 
         recv(this->receiver, &vreq);
 
-        if (vreq.at(0) == "WAKE") {
-           vresp.push_back("GIVE");
-           send(this->receiver, &vresp);
+        if (vreq.at(0) != "JOB") {
+           // error, raise something
         }
-        else {
-          vresp.push_back("JOBRES");
 
-          try {
+        vresp.push_back("JOBRES");
+
+        try {
             this->execute(&vreq, &vresp);
-          }
-          catch (...) {
-            vresp.push_back("ERROR");
-          }
-          // sending back the response
-          send(this->receiver, &vresp);
         }
+        catch (...) {
+            vresp.push_back("ERROR");
+        }
+        // sending back the response
+        send(this->receiver, &vresp);
       }
     }
 

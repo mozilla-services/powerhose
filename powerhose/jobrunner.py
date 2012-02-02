@@ -44,48 +44,34 @@ class JobRunner(object):
     def _execute(self, job_id, job_data, timeout=1.):
         worker = None
         timeout *= 1000.   # timeout is in ms
-        spent = 0
+        data = serialize("JOB", str(job_id), job_data)
+
         try:
             with self.workers.worker() as worker:
-                print 'sending WAKE'
                 try:
-                    worker.send("WAKE", zmq.NOBLOCK)
+                    worker.send(data, zmq.NOBLOCK)
                 except zmq.ZMQError, e:
                     raise ExecutionError(str(e))
 
                 poller = zmq.Poller()
                 poller.register(worker, zmq.POLLIN)
 
-                while True:
+                try:
+                    events = dict(poller.poll(timeout))
+                except zmq.ZMQError, e:
+                    raise ExecutionError(str(e))
 
-                    try:
-                        events = dict(poller.poll(timeout))
-                    except zmq.ZMQError, e:
-                        raise ExecutionError(str(e))
+                if events == {}:
+                    print 'nothing'
+                    raise TimeoutError()
 
-                    if events == {}:
-                        print 'nothing'
-                        raise TimeoutError()
-
-                    for socket in events:
-                        msg = socket.recv()
-                        print 'received ' + str(msg)
-
-                        msg = unserialize(msg)
-
-                        if msg == ['GIVE']:
-                            # the worker is ready to get some job done
-                            data = serialize("JOB", str(job_id), job_data)
-                            print 'sending ' + data
-                            try:
-                                socket.send(data, zmq.NOBLOCK)
-                            except zmq.ZMQError, e:
-                                raise ExecutionError(str(e))
-                        elif msg[0] == 'JOBRES':
-                            # we got a result
-                            return msg[-1]
-                        else:
-                            raise NotImplementedError(str(msg))
+                for socket in events:
+                    msg = unserialize(socket.recv())
+                    if msg[0] == 'JOBRES':
+                        # we got a result
+                        return msg[-1]
+                    else:
+                        raise NotImplementedError(str(msg))
 
         except Exception, e:
             if worker is not None:

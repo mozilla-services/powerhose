@@ -91,10 +91,7 @@ class Worker(object):
             for socket in events:
                 msg = unserialize(socket.recv())
 
-                if msg == ['WAKE']:
-                    # yeah I can work
-                    socket.send('GIVE')
-                elif msg[0] == 'JOB':
+                if msg[0] == 'JOB':
                     # do the job and send the result
                     print '%s is doing some work' % self.identity
                     try:
@@ -104,5 +101,7 @@ class Worker(object):
                         res = str(e)
 
                     socket.send(serialize("JOBRES", msg[1], res))
+                else:
+                    socket.send('ERROR')
 
         self._msg('REMOVE', 'REMOVED')

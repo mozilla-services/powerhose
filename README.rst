@@ -53,8 +53,6 @@ Performing a task
 -----------------
 
 - The Master chooses a worker that's in the list of available workers
-- The Master ask the worker if it can accept the job
-- If the worker fails to answer the Master removes it from the list
 - Once the master has a worker, it removes it from the list of available
   workers and send work to it
 - The worker peforms the job synchronously then return the result
@@ -66,8 +64,6 @@ Performing a task
 ::
 
  M                 W
-   --- WAKE        --> Acks
-   <-- GIVE        ---
    --> JOB         --> do the job
    <-- JOBRES      ---
 
@@ -82,8 +78,9 @@ Heartbeat
 - The master that receives a ping from a unknown worker, registers it
 
 ::
+
    W                      M
-   --- PING        -->   possibly : Register the Worker
-   <-- PONG        ---
+   --- PING + endpoint   -->   possibly : Register the Worker
+   <-- PONG              ---
 
 
