@@ -45,6 +45,8 @@ class Workers(object):
         tries = 0
         worker = key = None
 
+        # XXX replace this code by a lock until there's an available worker
+        #
         while worker is None and tries < 3:
             try:
                 key = random.choice(self._available.keys())
