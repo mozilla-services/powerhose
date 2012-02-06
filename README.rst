@@ -32,6 +32,7 @@ Let's create a worker that knows how to calculate a square of a number::
 
 
 In this example, the Worker is instanciated with:
+
 - the **endpoint**, which is the socket where the master listens
 - the **workpoint**, the socket where the worker gets his jobs
 - the **target**, which is the callable that receives job
