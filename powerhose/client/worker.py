@@ -93,15 +93,18 @@ class Worker(object):
 
                 if msg[0] == 'JOB':
                     # do the job and send the result
-                    print '%s is doing some work' % self.identity
+                    start = time.time()
                     try:
                         res = self.target(msg[1:])
                     except Exception , e:
                         # XXX log the error
                         res = str(e)
-
+                    print '%.6f' % (time.time() - start)
                     socket.send(serialize("JOBRES", msg[1], res))
                 else:
                     socket.send('ERROR')
 
-        self._msg('REMOVE', 'REMOVED')
+        try:
+            self._msg('REMOVE', 'REMOVED')
+        except RegisterError:
+            pass

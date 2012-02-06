@@ -3,6 +3,9 @@ import random
 from threading import Thread, RLock
 import contextlib
 import zmq
+
+from gevent.queue import Queue, Empty
+
 from powerhose.util import serialize, unserialize
 
 
@@ -17,17 +20,15 @@ _WEIGHTS = range(10)
 class Workers(object):
 
     def __init__(self, timeout=5.):
-        self.lock = RLock()
-        self._available = {}
-        self._busy = {}
+        self._available = Queue()
         self.timeout = timeout
-        self._workers = []
+        self._workers = {}
 
     def __contains__(self, worker):
         return worker in self._workers
 
     def __len__(self):
-        return len(self._available) + len(self._busy)
+        return len(self._workers)
 
     @contextlib.contextmanager
     def worker(self):
@@ -41,45 +42,35 @@ class Workers(object):
         if timeout is None:
             timeout = self.timeout
 
-        # need to catch the empty exception
-        tries = 0
-        worker = key = None
+        worker = None
 
-        # XXX replace this code by a lock until there's an available worker
-        #
-        while worker is None and tries < 3:
-            try:
-                key = random.choice(self._available.keys())
-                worker = self._available[key]
-                del self._available[key]
-            except IndexError:
-                tries += 1
+        # wait for timeout seconds
+        try:
+            while worker is None:
+                worker = self._available.get(timeout=timeout)
+                if worker.identity not in self._workers:
+                    # it has been removed
+                    self.delete(worker.identity)
+                    worker = None
 
-        if worker is None:
-            raise ValueError()
+        except Empty:
+            raise TimeoutError()
 
-        self._busy[key] = worker
         return worker
 
-    def delete(self, worker):
-        if worker in self._workers:
-            self._workers.remove(worker)
-
-        if worker in self._busy:
-            self._busy[worker]
-
-        if worker in self._available:
-            _worker = self._available[worker]
-            _worker.close()
-            del self._available[worker]
+    def delete(self, identity):
+        if identity not in self._workers:
+            return
+        worker = self._workers[identity]
+        del self._workers[identity]
+        worker.close()
 
     def add(self, worker):
-        self._available[worker.identity] = worker
-        self._workers.append(worker.identity)
+        self._available.put(worker)
+        self._workers[worker.identity] = worker
 
     def release(self, worker):
-        del self._busy[worker.identity]
-        self._available[worker.identity] = worker
+        self._available.put(worker)
 
 
 class WorkerRegistration(Thread):
@@ -121,14 +112,16 @@ class WorkerRegistration(Thread):
                     socket.send('ERROR')
 
                 if msg[-2] == 'PING':
-                    if msg[-1] in self.workers:
-                        return
-                    name = msg[-1]
-                    # keep track of that worker
-                    work = self.context.socket(zmq.REQ)
-                    work.connect(name)
-                    work.identity = name
-                    self.workers.add(work)
+
+                    if msg[-1] not in self.workers:
+                        name = msg[-1]
+                        # keep track of that worker
+                        work = self.context.socket(zmq.REQ)
+                        work.connect(name)
+                        work.identity = name
+                        self.workers.add(work)
+
+                    # in any case we pong back
                     socket.send('PONG')
                 elif msg[-2] == 'REMOVE':
                     if msg[-1] in self.workers:

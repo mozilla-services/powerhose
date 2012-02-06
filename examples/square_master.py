@@ -19,8 +19,11 @@ if __name__ == '__main__':
             sys.stdout.flush()
             time.sleep(1.)
 
+        job = 0
         while True:
             print runner.execute('1', str(random.randrange(1000)))
+            job += 1
+            print job
 
         runner.stop()
     except KeyboardInterrupt:

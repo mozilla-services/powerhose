@@ -79,4 +79,7 @@ class Pinger(threading.Thread):
         if not self.running:
             return
         self.running = False
-        self.join()
+        try:
+            self.join()
+        except RuntimeError:
+            pass
