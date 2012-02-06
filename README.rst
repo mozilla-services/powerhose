@@ -5,6 +5,10 @@ Powerhose
 Powerhose is a single master/ multiple worker zmq lib, that can be used to
 push some work to specialized workers.
 
+**WARNING: This is still a work in progress - no stable version has been 
+released yet**
+
+
 Example
 =======
 
