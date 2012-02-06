@@ -19,7 +19,6 @@ Let's create a worker that knows how to calculate a square of a number::
     endpoint = "ipc:///tmp/master-routing.ipc"
     workpoint = "ipc://worker-routing.ipc"
 
-
     def square(*args):
         number = int((args)[0][1])
         return str(number * number)
@@ -34,8 +33,9 @@ Let's create a worker that knows how to calculate a square of a number::
 In this example, the Worker is instanciated with:
 
 - the **endpoint**, which is the socket where the master listens
-- the **workpoint**, the socket where the worker gets his jobs
-- the **target**, which is the callable that receives job
+  to workers that want to register.
+- the **workpoint**, the socket where the worker gets his jobs.
+- the **target**, which is the callable that receives jobs to perform.
 
 The **square** function is getting the value in a string, and has to return
 the result as a string that's sent back to the master. Of course, you would
@@ -47,7 +47,7 @@ The master can look like this::
     from powerhose.jobrunner import JobRunner
     import time
     import random
-
+    import sys
 
     endpoint = "ipc:///tmp/master-routing.ipc"
 
