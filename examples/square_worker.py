@@ -1,11 +1,8 @@
-from powerhose.jobrunner import JobRunner
 from powerhose.client.worker import Worker
 
-import time
 
 endpoint = "ipc:///tmp/master-routing.ipc"
 workpoint = "ipc://worker-routing.ipc"
-
 
 
 if __name__ == '__main__':
