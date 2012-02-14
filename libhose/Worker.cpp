@@ -110,7 +110,7 @@ namespace powerhose
    */
 
   Worker::Worker(const char* receiverChannel, const char* endPoint) {
-    this->heartbeatDelay = 5;
+    this->heartbeatDelay = 10;
     this->timeout = 1000000;  // zmq timeout is in microseconds
     this->ctx = new context_t(1);
     this->receiver = new socket_t(*this->ctx, ZMQ_REP);
@@ -152,6 +152,9 @@ namespace powerhose
   void Worker::run() {
     // register
     this->reg();
+
+    // wait a bit
+    sleep(1);
 
     // start the heartbeat
     pthread_t th;

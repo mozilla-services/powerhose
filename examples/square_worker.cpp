@@ -30,9 +30,11 @@ void SquareWorker::execute(vector<string>* vreq,  vector<string>* vres) {
 int main(int argc, const char* const argv[]) {
 
 
-  const char* receiver = "ipc://worker-cpp.ipc";
-  const char* endpoint = "ipc:///tmp/master-routing.ipc";
+  const char* receiver = argv[1];   //"ipc://worker-cpp.ipc";
+  const char* endpoint = argv[2];  // "ipc:///tmp/master-routing.ipc";
 
+  cout << receiver << endl;
+  cout << endpoint << endl;
   cout << "Creating a worker" << endl;
   SquareWorker worker(receiver, endpoint);
 

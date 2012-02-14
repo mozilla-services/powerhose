@@ -8,6 +8,7 @@ from powerhose.workermgr import Workers, WorkerRegistration
 from powerhose.util import serialize, unserialize
 
 
+
 class TimeoutError(Exception):
     pass
 
