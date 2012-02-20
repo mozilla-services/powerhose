@@ -125,7 +125,7 @@ class WorkerRegistration(Thread):
                     socket.send('PONG')
                 elif msg[-2] == 'REMOVE':
                     if msg[-1] in self.workers:
-                        workers.delete(msg[-1])
+                        self.workers.delete(msg[-1])
                     socket.send('REMOVED')
                 else:
                     socket.send('ERROR')
