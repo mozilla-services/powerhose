@@ -5,6 +5,7 @@ import threading
 
 from powerhose.client.pinger import Pinger
 from powerhose.util import serialize, unserialize
+from powerhose import logger
 
 
 class RegisterError(Exception):
@@ -31,7 +32,7 @@ class Worker(object):
         self.target = target
 
     def failed(self):
-        print '**ping failed lets die'
+        logger.debug("ping failed let's die")
         try:
             self._msg('REMOVE', 'REMOVED')
         except RegisterError:
@@ -99,7 +100,7 @@ class Worker(object):
                     except Exception , e:
                         # XXX log the error
                         res = str(e)
-                    print '%.6f' % (time.time() - start)
+                    logger.debug('%.6f' % (time.time() - start))
                     socket.send(serialize("JOBRES", msg[1], res))
                 else:
                     socket.send('ERROR')

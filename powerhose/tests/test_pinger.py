@@ -3,7 +3,7 @@ import zmq
 import threading
 import time
 
-from powerhose.pinger import Pinger
+from powerhose.client.pinger import Pinger
 
 
 _ENDPOINT = 'ipc:///tmp/tests.ipc'
