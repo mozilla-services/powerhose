@@ -93,7 +93,6 @@ class WorkerRegistration(Thread):
         client = self.context.socket(zmq.REP)
         client.identity = 'master'
         client.bind(self.endpoint)
-
         poller = zmq.Poller()
         poller.register(client, zmq.POLLIN)
 
@@ -105,11 +104,11 @@ class WorkerRegistration(Thread):
 
             for socket in events:
                 msg = unserialize(socket.recv())
-                print msg
 
                 if len(msg) < 2:
                     # XXX log
                     socket.send('ERROR')
+
 
                 if msg[-2] == 'PING':
 
@@ -125,7 +124,9 @@ class WorkerRegistration(Thread):
                     socket.send('PONG')
                 elif msg[-2] == 'REMOVE':
                     if msg[-1] in self.workers:
-                        workers.delete(msg[-1])
+                        self.workers.delete(msg[-1])
                     socket.send('REMOVED')
                 else:
                     socket.send('ERROR')
+
+            time.sleep(0.2)

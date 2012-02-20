@@ -32,21 +32,29 @@ def timed(func):
 
 class JobRunner(object):
     def __init__(self, endpoint=_ENDPOINT, retries=3):
+        self.started = False
         self.workers = Workers()
         self.registration = WorkerRegistration(self.workers)
         self.retries = retries
 
     def start(self):
+        if self.started:
+            return
         self.registration.start()
+        self.started = True
 
     def stop(self):
+        if not self.started:
+            return
         self.registration.stop()
+        self.started = False
 
     def execute(self, job_id, job_data, timeout=1.):
         e = None
 
         for i in range(self.retries):
             try:
+
                 return self._execute(job_id, job_data, timeout)
             except (TimeoutError, ExecutionError), e:
                 print str(e)

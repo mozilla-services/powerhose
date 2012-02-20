@@ -74,7 +74,7 @@ class Worker(object):
     def stop(self):
         self.running = False
         self.pinger.stop()
-        time.sleep(.5)
+        time.sleep(.1)
         self.ctx.destroy(0)
 
     def run(self):
