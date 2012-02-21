@@ -1,7 +1,7 @@
 import time
 import threading
 
-from gevent_zmq import zmq
+from gevent_zeromq import zmq
 
 from powerhose.client.pinger import Pinger
 from powerhose.util import serialize, unserialize

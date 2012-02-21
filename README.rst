@@ -5,10 +5,10 @@ Powerhose
 Powerhose is a single master/ multiple worker zmq lib, that can be used to
 push some work to specialized workers.
 
-**WARNING: This is still a work in progress - no stable version has been 
+**WARNING: This is still a work in progress - no stable version has been
 released yet**
 
-**WARNING 2: consider using the https://github.com/traviscline/gevent-zeromq 
+**WARNING 2: consider using the https://github.com/traviscline/gevent-zeromq
 fork until it's merged into gevent-zeromq**
 
 

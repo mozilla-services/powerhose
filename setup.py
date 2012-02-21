@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 
-requires = ['pyzmq', 'gevent', 'gevent_zeromq']
+requires = ['pyzmq', 'gevent', 'gevent_zeromq', 'circus']
 
 
 setup(name='powerhose',
