@@ -15,12 +15,17 @@ fork until it's merged into gevent-zeromq**
 Example
 =======
 
+
+Worker
+------
+
 Let's create a worker that knows how to calculate a square of a number::
 
+    import sys
     from powerhose.client.worker import Worker
 
-    endpoint = "ipc:///tmp/master-routing.ipc"
-    workpoint = "ipc://worker-routing.ipc"
+    endpoint = sys.argv[1]
+    workpoint = sys.argv[2]
 
     def square(*args):
         number = int((args)[0][1])
@@ -32,6 +37,9 @@ Let's create a worker that knows how to calculate a square of a number::
     except KeyboardInterrupt:
         worker.stop()
 
+The program can then be called like this::
+
+    $ python worker.py ipc://master.ipc ipc://routing.ipc
 
 In this example, the Worker is instanciated with:
 
@@ -44,6 +52,38 @@ The **square** function is getting the value in a string, and has to return
 the result as a string that's sent back to the master. Of course, you would
 use a real serializer/deserialzer when you operate with more complex data
 structures.
+
+Workers
+-------
+
+Now we want to run several workers, let's create another script for this::
+
+    from powerhose.client.workers import Workers
+    import sys
+
+    cmd = '%s examples/square_worker.py ipc://worker-routing-$WID.ipc'
+
+
+    workers = Workers(cmd % sys.executable)
+    try:
+        workers.run()
+    except KeyboardInterrupt:
+        workers.stop()
+
+
+The Workers class will take care if creating 5 workers (default value) by
+running the provided command. Notice the **$WID** value - it will be changed
+with an id that's unique per worker.
+
+Running the workers is then simply done with::
+
+    $ python workers.py
+
+The script uses the Circus library, which takes care of making sure the
+workers are respawned in case they die.
+
+Master
+------
 
 The master can look like this::
 
