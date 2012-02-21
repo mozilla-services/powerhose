@@ -2,7 +2,7 @@ import time
 import random
 from threading import Thread, RLock
 import contextlib
-import zmq
+from gevent_zeromq import zmq
 
 from powerhose.workermgr import Workers, WorkerRegistration
 from powerhose.util import serialize, unserialize

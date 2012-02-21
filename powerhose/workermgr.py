@@ -2,9 +2,11 @@ import time
 import random
 from threading import Thread, RLock
 import contextlib
-import zmq
 
+from gevent import monkey
+monkey.patch_all()
 from gevent.queue import Queue, Empty
+from gevent_zeromq import zmq
 
 from powerhose.util import serialize, unserialize
 
@@ -95,10 +97,11 @@ class WorkerRegistration(Thread):
         client.bind(self.endpoint)
         poller = zmq.Poller()
         poller.register(client, zmq.POLLIN)
+        poll_timeout = 1000
 
         while self.alive:
             try:
-                events = dict(poller.poll(1000))
+                events = dict(poller.poll(poll_timeout))
             except zmq.ZMQError:
                 break
 
@@ -129,4 +132,4 @@ class WorkerRegistration(Thread):
                 else:
                     socket.send('ERROR')
 
-            time.sleep(0.2)
+            time.sleep(.1)
