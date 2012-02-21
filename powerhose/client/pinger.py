@@ -57,7 +57,7 @@ class Pinger(threading.Thread):
 
                 try:
                     events = dict(self.poller.poll(self.duration * 1000))
-                except zmq.ZMQError, e:
+                except zmq.ZMQError:
                     self.num_failed += 1
                     continue
 
