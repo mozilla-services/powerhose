@@ -1,7 +1,7 @@
 import time
-import sys
-import zmq
 import threading
+
+from gevent_zmq import zmq
 
 from powerhose.client.pinger import Pinger
 from powerhose.util import serialize, unserialize
@@ -97,7 +97,7 @@ class Worker(object):
                     start = time.time()
                     try:
                         res = self.target(msg[1:])
-                    except Exception , e:
+                    except Exception, e:
                         # XXX log the error
                         res = str(e)
                     logger.debug('%.6f' % (time.time() - start))

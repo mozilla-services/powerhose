@@ -1,6 +1,5 @@
 import time
-import sys
-import zmq
+from gevent_zeromq import zmq
 import threading
 
 from powerhose.util import serialize

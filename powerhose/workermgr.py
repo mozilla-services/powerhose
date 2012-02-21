@@ -1,14 +1,11 @@
 import time
-import random
-from threading import Thread, RLock
+from threading import Thread
 import contextlib
 
-from gevent import monkey
-monkey.patch_all()
-from gevent.queue import Queue, Empty
+from gevent.queue import Queue
 from gevent_zeromq import zmq
 
-from powerhose.util import serialize, unserialize
+from powerhose.util import unserialize
 
 
 class TimeoutError(Exception):
@@ -111,7 +108,6 @@ class WorkerRegistration(Thread):
                 if len(msg) < 2:
                     # XXX log
                     socket.send('ERROR')
-
 
                 if msg[-2] == 'PING':
 
