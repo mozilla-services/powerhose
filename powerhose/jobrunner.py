@@ -30,8 +30,9 @@ def timed(func):
 class JobRunner(object):
     def __init__(self, endpoint=_ENDPOINT, retries=3):
         self.started = False
+        self.endpoint = endpoint
         self.workers = Workers()
-        self.registration = WorkerRegistration(self.workers)
+        self.registration = WorkerRegistration(self.workers, self.endpoint)
         self.retries = retries
 
     def start(self):
