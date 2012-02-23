@@ -54,16 +54,16 @@ class Worker(object):
                 try:
                     data = serialize(req, self.identity)
                     self.master.send(data, zmq.NOBLOCK)
-                except zmq.ZMQError:
-                    raise RegisterError()
+                except zmq.ZMQError, e:
+                    raise RegisterError(str(e))
 
                 try:
                     events = dict(poller.poll(self.timeout))
-                except zmq.ZMQError:
-                    raise RegisterError()
+                except zmq.ZMQError, e:
+                    raise RegisterError(str(e))
 
                 if events == {}:
-                    raise RegisterError()
+                    raise RegisterError("Nothing came back")
                 else:
                     for socket in events:
                         res = socket.recv()

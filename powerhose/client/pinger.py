@@ -3,6 +3,7 @@ from gevent_zeromq import zmq
 import threading
 
 from powerhose.util import serialize
+from powerhose import logger
 
 
 endpoint = "ipc://master-routing.ipc"
@@ -17,6 +18,7 @@ class Pinger(threading.Thread):
         threading.Thread.__init__(self)
         self.duration = duration
         self.identity = identity
+        logger.debug('starting pinger from %s' % self.identity)
         self.socket = socket
         self.locker = locker
         self.running = False
@@ -50,23 +52,29 @@ class Pinger(threading.Thread):
             with self.locker:
                 try:
                     data = serialize('PING', self.identity)
+                    logger.debug('[pinger] Pinging with ' + data)
                     self.socket.send(data, zmq.NOBLOCK)
-                except zmq.ZMQError:
+                except zmq.ZMQError, e:
                     num_failed += 1
+                    logger.debug('[pinger] ' + str(e))
                     continue
+
 
                 try:
                     events = dict(self.poller.poll(self.duration * 1000))
-                except zmq.ZMQError:
+                except zmq.ZMQError, e:
                     self.num_failed += 1
+                    logger.debug('[pinger] ' + str(e))
                     continue
 
                 if len(events) == 0:
+                    logger.debug('[pinger] ' + 'no pong!')
                     self.fail_callable()
                     num_failed += 1
                 else:
                     for socket in events:
                         res = socket.recv()
+                        logger.debug('[pinger] ' + 'got ' + res)
                         if res != 'PONG':
                             self.running = False
                             self.fail_callable()
@@ -77,6 +85,7 @@ class Pinger(threading.Thread):
     def stop(self):
         if not self.running:
             return
+        logger.debug('stopping pinger')
         self.running = False
         try:
             self.join()

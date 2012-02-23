@@ -1,4 +1,5 @@
 from circus import get_trainer
+from powerhose import logger
 
 
 class Workers(object):
@@ -7,7 +8,10 @@ class Workers(object):
         self.trainer = get_trainer(cmd, num_workers, timeout, check, controller)
 
     def run(self):
+        logger.debug('starting workers')
         self.trainer.run()
 
     def stop(self):
-        self.trainer.terminate()
+        logger.debug('stopping workers')
+        self.trainer.halt()
+        logger.debug('stopping workers done')

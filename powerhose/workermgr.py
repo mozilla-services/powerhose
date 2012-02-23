@@ -6,13 +6,13 @@ from gevent.queue import Queue
 from gevent_zeromq import zmq
 
 from powerhose.util import unserialize
+from powerhose import logger
 
 
 class TimeoutError(Exception):
     pass
 
 
-_ENDPOINT = "ipc:///tmp/master-routing.ipc"
 _WEIGHTS = range(10)
 
 
@@ -74,7 +74,7 @@ class Workers(object):
 
 class WorkerRegistration(Thread):
 
-    def __init__(self, workers, endpoint=_ENDPOINT):
+    def __init__(self, workers, endpoint):
         Thread.__init__(self)
         self.workers = workers
         self.context = zmq.Context()
@@ -82,6 +82,7 @@ class WorkerRegistration(Thread):
         self.endpoint = endpoint
 
     def stop(self):
+        logger.debug('Stopping [workermgr]')
         self.alive = False
         self.join()
 
@@ -89,6 +90,7 @@ class WorkerRegistration(Thread):
         self.alive = True
 
         # channel to communicate with the workers
+        logger.debug('Starting [workermgr]')
         client = self.context.socket(zmq.REP)
         client.identity = 'master'
         client.bind(self.endpoint)
@@ -99,7 +101,9 @@ class WorkerRegistration(Thread):
         while self.alive:
             try:
                 events = dict(poller.poll(poll_timeout))
-            except zmq.ZMQError:
+            except zmq.ZMQError, e:
+                logger.debug("The poll failed")
+                logger.debug(str(e))
                 break
 
             for socket in events:
@@ -110,9 +114,10 @@ class WorkerRegistration(Thread):
                     socket.send('ERROR')
 
                 if msg[-2] == 'PING':
-
+                    logger.debug("[workermgr] Got a PING")
                     if msg[-1] not in self.workers:
                         name = msg[-1]
+                        logger.debug("Registered " + name)
                         # keep track of that worker
                         work = self.context.socket(zmq.REQ)
                         work.connect(name)
@@ -120,12 +125,15 @@ class WorkerRegistration(Thread):
                         self.workers.add(work)
 
                     # in any case we pong back
+                    logger.debug("[workermgr] sent a PONG")
                     socket.send('PONG')
                 elif msg[-2] == 'REMOVE':
                     if msg[-1] in self.workers:
+                        logger.debug("[workermgr] Removing` " + msg[-1])
                         self.workers.delete(msg[-1])
                     socket.send('REMOVED')
                 else:
+                    logger.debug('Error')
                     socket.send('ERROR')
 
             time.sleep(.1)
