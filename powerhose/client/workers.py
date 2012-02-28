@@ -9,9 +9,9 @@ class Workers(object):
 
     def run(self):
         logger.debug('starting workers')
-        self.trainer.run()
+        self.trainer.start()
 
     def stop(self):
         logger.debug('stopping workers')
-        self.trainer.halt()
+        self.trainer.stop()
         logger.debug('stopping workers done')
