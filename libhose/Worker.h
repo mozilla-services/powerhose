@@ -26,7 +26,7 @@ class Worker {
 
     public:
         Worker(const char* receiverChannel, const char* endPoint);
-        ~Worker();
+        virtual ~Worker();
         void run();
 
         int timeout;
