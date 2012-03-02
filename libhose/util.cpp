@@ -1,15 +1,5 @@
-#include <string.h>
-#include <zmq.hpp>
-#include <iostream>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <map>
-#include <sstream>
-#include <vector>
 #include "util.h"
-
+#include <iostream>
 
 
 void str2msg(::std::string* data, ::zmq::message_t* msg) {

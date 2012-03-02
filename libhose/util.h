@@ -1,12 +1,4 @@
-#include <string.h>
 #include <zmq.hpp>
-#include <iostream>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <map>
-#include <sstream>
 #include <vector>
 
 

@@ -1,5 +1,6 @@
 #include "Worker.h"
-
+#include <iostream>
+#include <sstream>
 
 class SquareWorker: public Worker {
 

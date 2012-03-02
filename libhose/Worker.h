@@ -1,19 +1,8 @@
 #ifndef WORKER_H
 #define WORKER_H
 
-#include <exception>
-#include <string.h>
 #include <zmq.hpp>
-#include <iostream>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <map>
-#include <sstream>
-#include "util.h"
-#include <pthread.h>
-
+#include <vector>
 
 
 class RegisterError: public ::std::exception {
@@ -33,7 +22,7 @@ class Worker {
 
     protected:
         virtual void execute(::std::vector< ::std::string>* vreq,  
-                                ::std::vector< ::std::string>* vres);
+                             ::std::vector< ::std::string>* vres);
 
     public:
         Worker(const char* receiverChannel, const char* endPoint);

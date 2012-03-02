@@ -1,15 +1,6 @@
-#include <string.h>
-#include <zmq.hpp>
-#include <iostream>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <map>
-#include <sstream>
-#include <vector>
 #include "Worker.h"
 #include "util.h"
+#include <iostream>
 
 
 void callSocket(::std::string* request, ::std::string* response, ::zmq::socket_t* socket, int timeout) {
