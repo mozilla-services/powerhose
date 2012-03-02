@@ -11,20 +11,17 @@
 
 #include "util.h"
 
-using namespace zmq;
-using namespace std;
-
 
 namespace powerhose
 {
 
 
-  void str2msg(string* data, message_t* msg) {
+  void str2msg(::std::string* data, ::zmq::message_t* msg) {
     const char* sres = data->c_str();
     msg->rebuild((void *)(sres), data->size(), NULL, NULL);
   }
 
-  void msg2str(message_t* msg, string* res) {
+  void msg2str(::zmq::message_t* msg, ::std::string* res) {
     size_t size = msg->size();
     char* data = new char[msg->size() + 1];
     memcpy(data, msg->data(), size);
@@ -32,7 +29,7 @@ namespace powerhose
     res->assign(data);
   }
 
-  void serialize(vector<string>* data, string* res) {
+  void serialize(::std::vector< ::std::string>* data, ::std::string* res) {
     res->clear();
     for (unsigned int i = 0; i < data->size(); i++) {
         res->append(data->at(i));
@@ -42,13 +39,13 @@ namespace powerhose
     }
   }
 
-  void unserialize(string* data, vector<string>* res) {
+  void unserialize(::std::string* data, ::std::vector< ::std::string>* res) {
     size_t found = 0;
     int current = 0;
     int size;
-    string sep = ":::";
+    ::std::string sep = ":::";
 
-    while (found != string::npos) {
+    while (found != ::std::string::npos) {
         found = data->find_first_of(sep, current + 1);
         if (found > 0) {
             size = found - current;
@@ -58,21 +55,21 @@ namespace powerhose
     }
    }
 
-  void send(socket_t* socket, vector<string>* data) {
-      message_t msg;
-      string res;
+  void send(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
+      ::zmq::message_t msg;
+      ::std::string res;
       serialize(data, &res);
-      cout << "sending " << res << endl;
+      ::std::cout << "sending " << res << ::std::endl;
       str2msg(&res, &msg);
       socket->send(msg);
   }
 
-  void recv(socket_t* socket, vector<string>* data) {
-      message_t msg;
-      string smsg;
+  void recv(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
+      ::zmq::message_t msg;
+      ::std::string smsg;
       socket->recv(&msg);
       msg2str(&msg, &smsg);
-      cout << "received " << smsg << endl;
+      ::std::cout << "received " << smsg << ::std::endl;
       data->clear();
       unserialize(&smsg, data);
   }

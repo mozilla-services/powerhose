@@ -4,7 +4,7 @@
 class SquareWorker: public powerhose::Worker {
 
     protected:
-        void execute(vector<string>* vreq,  vector<string>* vres);
+        void execute(::std::vector< ::std::string>* vreq,  ::std::vector< ::std::string>* vres);
     public:
        SquareWorker(const char* receiverChannel, const char* endPoint);
 };
@@ -15,13 +15,13 @@ SquareWorker::SquareWorker(const char* receiverChannel, const char* endPoint) : 
 };
 
 
-void SquareWorker::execute(vector<string>* vreq,  vector<string>* vres) {
+void SquareWorker::execute(::std::vector< ::std::string>* vreq,  ::std::vector< ::std::string>* vres) {
   int value;
-  string number = vreq->at(2);
-  stringstream ss(number);
+  ::std::string number = vreq->at(2);
+  ::std::stringstream ss(number);
   ss >> value;
   value *= value;
-  stringstream out;
+  ::std::stringstream out;
   out << value;
   vres->push_back(out.str());
 }
@@ -33,12 +33,12 @@ int main(int argc, const char* const argv[]) {
   const char* receiver = argv[1];   //"ipc://worker-cpp.ipc";
   const char* endpoint = argv[2];  // "ipc:///tmp/master-routing.ipc";
 
-  cout << receiver << endl;
-  cout << endpoint << endl;
-  cout << "Creating a worker" << endl;
+  ::std::cout << receiver << ::std::endl;
+  ::std::cout << endpoint << ::std::endl;
+  ::std::cout << "Creating a worker" << ::std::endl;
   SquareWorker worker(receiver, endpoint);
 
-  cout << "Let's run it" << endl;
+  ::std::cout << "Let's run it" << ::std::endl;
   worker.run();
 
   return 1;

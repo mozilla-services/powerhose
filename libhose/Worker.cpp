@@ -11,16 +11,13 @@
 #include "Worker.h"
 #include "util.h"
 
-using namespace zmq;
-using namespace std;
-
 
 namespace powerhose
 {
 
 
-  void callSocket(string* request, string* response, socket_t* socket, int timeout) {
-      cout << "" << " Sending " << *request << endl;
+  void callSocket(::std::string* request, ::std::string* response, ::zmq::socket_t* socket, int timeout) {
+      ::std::cout << "" << " Sending " << *request << ::std::endl;
 
       // setting up the poller for this exchange
 
@@ -31,42 +28,42 @@ namespace powerhose
       poll_items[0] = item1;
 
       // sending the message to the master
-      message_t msg;
+      ::zmq::message_t msg;
       str2msg(request, &msg);
       try {
           socket->send(msg, ZMQ_NOBLOCK);
       }
       catch (...) {
-          cout << "" << " could not send a msg" << endl;
+          ::std::cout << "" << " could not send a msg" << ::std::endl;
           throw RegisterError();
       }
 
-      cout << "" << " waiting for an answer" << endl;
+      ::std::cout << "" << " waiting for an answer" << ::std::endl;
 
       // waiting for an answer now
-      poll(poll_items, 1, timeout);
+      ::zmq::poll(poll_items, 1, timeout);
 
-      cout << "" <<  " poll is over" << endl;
+      ::std::cout << "" <<  " poll is over" << ::std::endl;
       // no answer in time
       if (poll_items[0].revents == 0) {
-          cout << "did not get anything" << endl;
+          ::std::cout << "did not get anything" << ::std::endl;
           throw RegisterError();
       }
       else {
         // getting the result
-        message_t res;
+        ::zmq::message_t res;
         socket->recv(&res);
 
-        string result;
+        ::std::string result;
         msg2str(&res, &result);
 
-        cout <<"" <<  " we got " << result << endl;
-        cout << "" << " we want " << *response << endl;
+        ::std::cout <<"" <<  " we got " << result << ::std::endl;
+        ::std::cout << "" << " we want " << *response << ::std::endl;
 
         if (result != *response) {
             throw RegisterError();
         }
-        else cout << "" << " Registered!" << endl;
+        else ::std::cout << "" << " Registered!" << ::std::endl;
       }
   }
 
@@ -75,11 +72,11 @@ namespace powerhose
  */
  void *heartbeat(void *ptr) {
     Worker *worker = (Worker*) ptr;
-    string pong = "PONG";
-    vector<string> vreq;
+    ::std::string pong = "PONG";
+    ::std::vector< ::std::string> vreq;
     vreq.push_back("PING");
     vreq.push_back(worker->receiverChannel);
-    string req;
+    ::std::string req;
     serialize(&vreq, &req);
     int failures = 0;
     int max_failures = 10;
@@ -87,10 +84,10 @@ namespace powerhose
     while (worker->heartbeatRunning && failures < max_failures) {
         try {
             callSocket(&req, &pong, worker->endpoint, worker->timeout);
-            cout << "ping did work" << endl;
+            ::std::cout << "ping did work" << ::std::endl;
         }
         catch (...) {
-            cout << "ping did not work!" << endl;
+            ::std::cout << "ping did not work!" << ::std::endl;
             failures += 1;
         }
         // we need to sleep here
@@ -100,7 +97,7 @@ namespace powerhose
     if (failures >= max_failures) {
         worker->heartbeatFailed = true;
     }
-    cout << "bye!" << endl;
+    ::std::cout << "bye!" << ::std::endl;
  }
 
 
@@ -112,11 +109,11 @@ namespace powerhose
   Worker::Worker(const char* receiverChannel, const char* endPoint) {
     this->heartbeatDelay = 10;
     this->timeout = 1000000;  // zmq timeout is in microseconds
-    this->ctx = new context_t(1);
-    this->receiver = new socket_t(*this->ctx, ZMQ_REP);
+    this->ctx = new ::zmq::context_t(1);
+    this->receiver = new ::zmq::socket_t(*this->ctx, ZMQ_REP);
     this->receiver->bind(receiverChannel);
     this->receiverChannel = receiverChannel;
-    this->endpoint = new socket_t(*this->ctx, ZMQ_REQ);
+    this->endpoint = new ::zmq::socket_t(*this->ctx, ZMQ_REQ);
     this->endpoint->connect(endPoint);
     this->heartbeatFailed = false;
     zmq_pollitem_t item1;
@@ -133,19 +130,19 @@ namespace powerhose
     delete this->ctx;
   }
 
-  void Worker::execute(vector<string>* vreq,  vector<string>* vres) {
+  void Worker::execute(::std::vector< ::std::string>* vreq,  ::std::vector< ::std::string>* vres) {
       vres->push_back("NOTIMPLEMENTED");
   }
 
   void Worker::reg() {
       // register to the master
-      cout << "registering" << endl;
-      vector<string> vreq;
+      ::std::cout << "registering" << ::std::endl;
+      ::std::vector< ::std::string> vreq;
       vreq.push_back("PING");
       vreq.push_back(this->receiverChannel);
-      string req;
+      ::std::string req;
       serialize(&vreq, &req);
-      string resp = "PONG";
+      ::std::string resp = "PONG";
       callSocket(&req, &resp, this->endpoint, this->timeout);
   }
 
@@ -158,11 +155,11 @@ namespace powerhose
 
     // start the heartbeat
     pthread_t th;
-    cout << "creating the HB" << endl;
+    ::std::cout << "creating the HB" << ::std::endl;
     this->heartbeatRunning = true;
     pthread_create(&th, NULL, heartbeat, (void*)this);
 
-    cout << "Now waiting for some job" << endl;
+    ::std::cout << "Now waiting for some job" << ::std::endl;
     // now loop and wait for some work to do
     zmq_pollitem_t poll_items[1];
     zmq_pollitem_t item1;
@@ -170,14 +167,14 @@ namespace powerhose
     item1.events = ZMQ_POLLIN;
     poll_items[0] = item1;
 
-    vector<string> vresp;
-    vector<string> vreq;
+    ::std::vector< ::std::string> vresp;
+    ::std::vector< ::std::string> vreq;
 
     this->running = true;
 
     while (this->running && !this->heartbeatFailed) {
       // waiting for an answer now
-      poll(poll_items, 1, this->timeout);
+      ::zmq::poll(poll_items, 1, this->timeout);
 
       for (short j = 0; j < poll_items[0].revents; j++) {
 
@@ -204,10 +201,10 @@ namespace powerhose
     }
 
     // stop the heartbeat
-    cout << "stopping the heartbeat" << endl;
+    ::std::cout << "stopping the heartbeat" << ::std::endl;
     this->heartbeatRunning = false;
     pthread_join(th, NULL);
-    cout << "The worker is done" << endl;
+    ::std::cout << "The worker is done" << ::std::endl;
   }
 
 }

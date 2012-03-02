@@ -11,16 +11,13 @@
 
 
 
-using namespace zmq;
-using namespace std;
-
 
 namespace powerhose
 {
-  void str2msg(string* data, message_t* msg);
-  void msg2str(message_t* msg, string* res);
-  void serialize(vector<string>* data, string* res);
-  void unserialize(string* data, vector<string>* res);
-  void send(socket_t* socket, vector<string>* data);
-  void recv(socket_t* socket, vector<string>* data);
+  void str2msg(::std::string* data, ::zmq::message_t* msg);
+  void msg2str(::zmq::message_t* msg, ::std::string* res);
+  void serialize(::std::vector< ::std::string>* data, ::std::string* res);
+  void unserialize(::std::string* data, ::std::vector< ::std::string>* res);
+  void send(::zmq::socket_t* socket, ::std::vector< ::std::string>* data);
+  void recv(::zmq::socket_t* socket, ::std::vector< ::std::string>* data);
 }
