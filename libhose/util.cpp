@@ -8,28 +8,24 @@
 #include <map>
 #include <sstream>
 #include <vector>
-
 #include "util.h"
 
 
-namespace powerhose
-{
 
-
-  void str2msg(::std::string* data, ::zmq::message_t* msg) {
+void str2msg(::std::string* data, ::zmq::message_t* msg) {
     const char* sres = data->c_str();
     msg->rebuild((void *)(sres), data->size(), NULL, NULL);
-  }
+}
 
-  void msg2str(::zmq::message_t* msg, ::std::string* res) {
+void msg2str(::zmq::message_t* msg, ::std::string* res) {
     size_t size = msg->size();
     char* data = new char[msg->size() + 1];
     memcpy(data, msg->data(), size);
     data[size] = 0;
     res->assign(data);
-  }
+}
 
-  void serialize(::std::vector< ::std::string>* data, ::std::string* res) {
+void serialize(::std::vector< ::std::string>* data, ::std::string* res) {
     res->clear();
     for (unsigned int i = 0; i < data->size(); i++) {
         res->append(data->at(i));
@@ -37,9 +33,9 @@ namespace powerhose
             res->append(":::");
         }
     }
-  }
+}
 
-  void unserialize(::std::string* data, ::std::vector< ::std::string>* res) {
+void unserialize(::std::string* data, ::std::vector< ::std::string>* res) {
     size_t found = 0;
     int current = 0;
     int size;
@@ -53,27 +49,23 @@ namespace powerhose
             current = found + sep.size();
         }
     }
-   }
+}
 
-  void send(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
-      ::zmq::message_t msg;
-      ::std::string res;
-      serialize(data, &res);
-      ::std::cout << "sending " << res << ::std::endl;
-      str2msg(&res, &msg);
-      socket->send(msg);
-  }
+void send(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
+    ::zmq::message_t msg;
+    ::std::string res;
+    serialize(data, &res);
+    ::std::cout << "sending " << res << ::std::endl;
+    str2msg(&res, &msg);
+    socket->send(msg);
+}
 
-  void recv(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
-      ::zmq::message_t msg;
-      ::std::string smsg;
-      socket->recv(&msg);
-      msg2str(&msg, &smsg);
-      ::std::cout << "received " << smsg << ::std::endl;
-      data->clear();
-      unserialize(&smsg, data);
-  }
-
-
-
+void recv(::zmq::socket_t* socket, ::std::vector< ::std::string>* data) {
+    ::zmq::message_t msg;
+    ::std::string smsg;
+    socket->recv(&msg);
+    msg2str(&msg, &smsg);
+    ::std::cout << "received " << smsg << ::std::endl;
+    data->clear();
+    unserialize(&smsg, data);
 }

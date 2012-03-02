@@ -1,7 +1,7 @@
 #include "Worker.h"
 
 
-class SquareWorker: public powerhose::Worker {
+class SquareWorker: public Worker {
 
     protected:
         void execute(::std::vector< ::std::string>* vreq,  ::std::vector< ::std::string>* vres);

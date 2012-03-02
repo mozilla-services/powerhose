@@ -15,16 +15,14 @@
 #include <pthread.h>
 
 
-namespace powerhose
-{
 
-  class RegisterError: public ::std::exception {
+class RegisterError: public ::std::exception {
     virtual const char* what() const throw() {
-      return "Registration error";
+        return "Registration error";
     }
-  };
+};
 
-  class Worker {
+class Worker {
 
     private:
         bool running;
@@ -35,22 +33,20 @@ namespace powerhose
 
     protected:
         virtual void execute(::std::vector< ::std::string>* vreq,  
-                             ::std::vector< ::std::string>* vres);
+                                ::std::vector< ::std::string>* vres);
 
     public:
-       Worker(const char* receiverChannel, const char* endPoint);
-       ~Worker();
-       void run();
+        Worker(const char* receiverChannel, const char* endPoint);
+        ~Worker();
+        void run();
 
-       int timeout;
+        int timeout;
 
-       const char* receiverChannel;
-       ::zmq::socket_t* endpoint;
-       bool heartbeatRunning;
-       bool heartbeatFailed;
-       bool heartbeatDelay;
-  };
-
-}
+        const char* receiverChannel;
+        ::zmq::socket_t* endpoint;
+        bool heartbeatRunning;
+        bool heartbeatFailed;
+        bool heartbeatDelay;
+};
 
 #endif
