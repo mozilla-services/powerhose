@@ -50,14 +50,14 @@ class JobRunner(object):
         self.registration.stop()
         self.started = False
 
-    def execute(self, job_id, job_data, timeout=1.):
+    def execute(self, job, timeout=1.):
         from powerhose import logger
         e = None
 
         for i in range(self.retries):
             try:
 
-                return self._execute(job_id, job_data, timeout)
+                return self._execute(job, timeout)
             except (TimeoutError, ExecutionError), e:
                 logger.debug(str(e))
                 logger.debug('retrying - %d' % (i + 1))
