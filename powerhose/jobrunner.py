@@ -1,5 +1,5 @@
 import time
-from gevent_zeromq import zmq
+import zmq
 import sys
 import traceback
 
@@ -58,7 +58,6 @@ class JobRunner(object):
 
         for i in range(self.retries):
             try:
-
                 return self._execute(job, timeout)
             except (TimeoutError, ExecutionError), e:
                 logger.debug(str(e))
@@ -73,8 +72,10 @@ class JobRunner(object):
         worker = None
         timeout *= 1000.   # timeout is in ms
         data = serialize("JOB", job.serialize())
-
+        logger.debug('Lets run that job')
         try:
+            logger.debug('getting a worker')
+
             with self.workers.worker() as worker:
                 try:
                     worker.send(data, zmq.NOBLOCK)
@@ -105,6 +106,8 @@ class JobRunner(object):
                         raise NotImplementedError(str(msg))
 
         except Exception, e:
+            logger.debug('something went wrong')
+
             if worker is not None:
                 # killing this worker - it can come back on the next ping
                 self.workers.delete(worker.identity)

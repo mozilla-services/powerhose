@@ -7,7 +7,7 @@ class Workers(object):
                  check=5., controller='tcp://127.0.0.1:5555', **kw):
         self.arbiter = get_arbiter(cmd, num_workers, timeout,
                                    controller=controller,
-                                   check_flapping=False, **kw)
+                                   check_flapping=True, **kw)
 
     def run(self):
         logger.debug('starting workers')

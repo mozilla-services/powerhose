@@ -2,7 +2,7 @@ import time
 from threading import Thread
 import contextlib
 
-from gevent_zeromq import zmq
+import zmq
 from gevent.queue import Queue, Empty
 
 from powerhose.util import unserialize
@@ -38,6 +38,7 @@ class Workers(object):
             self.release(_worker)
 
     def acquire(self, timeout=None):
+        logger.debug('Trying to acquire a worker')
         if timeout is None:
             timeout = self.timeout
 
@@ -53,9 +54,9 @@ class Workers(object):
                     worker = None
 
         except Empty:
-            raise TimeoutError("Could not get a worker out "
-                                "of %d workers" % len(self._available))
+            raise TimeoutError("Could not get a worker")
 
+        logger.debug('we got one \o/')
         return worker
 
     def delete(self, identity):
@@ -70,6 +71,7 @@ class Workers(object):
         self._workers[worker.identity] = worker
 
     def release(self, worker):
+        logger.debug('releasing the worker')
         self._available.put(worker)
 
 
