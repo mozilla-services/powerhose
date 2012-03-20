@@ -2,8 +2,8 @@ import time
 from threading import Thread
 import contextlib
 
-from gevent.queue import Queue
 from gevent_zeromq import zmq
+from gevent.queue import Queue, Empty
 
 from powerhose.util import unserialize
 from powerhose import logger
@@ -53,7 +53,8 @@ class Workers(object):
                     worker = None
 
         except Empty:
-            raise TimeoutError()
+            raise TimeoutError("Could not get a worker out "
+                                "of %d workers" % len(self._available))
 
         return worker
 

@@ -1,5 +1,7 @@
 import time
 from gevent_zeromq import zmq
+import sys
+import traceback
 
 from powerhose.workermgr import Workers, WorkerRegistration
 from powerhose.util import serialize, unserialize
@@ -107,4 +109,7 @@ class JobRunner(object):
                 # killing this worker - it can come back on the next ping
                 self.workers.delete(worker.identity)
 
-            raise ExecutionError(str(e))
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            raise ExecutionError('\n'.join(exc))
