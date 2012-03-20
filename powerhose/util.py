@@ -1,12 +1,14 @@
 
 
+_SEP = '*****'
+
 # will do better later
 def serialize(*seq):
     for part in seq:
-        if '----' in part:
+        if _SEP in part:
             raise NotImplementedError
-    return '----'.join(seq)
+    return _SEP.join(seq)
 
 
 def unserialize(data):
-    return data.split('----')
+    return data.split(_SEP)
