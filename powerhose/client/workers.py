@@ -16,5 +16,5 @@ class Workers(object):
 
     def stop(self):
         logger.debug('stopping workers')
-        self.arbiter.terminate()
+        self.arbiter.stop()
         logger.debug('stopping workers done')
