@@ -67,10 +67,10 @@ class JobRunner(object):
 
     # XXX timeout is for each poll()
     @timed
-    def _execute(self, job_id, job_data, timeout=1.):
+    def _execute(self, job, timeout=1.):
         worker = None
         timeout *= 1000.   # timeout is in ms
-        data = serialize("JOB", str(job_id), job_data)
+        data = serialize("JOB", job.serialize())
 
         try:
             with self.workers.worker() as worker:

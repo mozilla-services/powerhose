@@ -1,5 +1,5 @@
 import unittest
-import zmq
+from gevent_zeromq import zmq
 import threading
 import time
 

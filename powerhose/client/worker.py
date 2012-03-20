@@ -92,6 +92,7 @@ class Worker(object):
             for socket in events:
                 msg = unserialize(socket.recv())
 
+                logger.debug(msg)
                 if msg[0] == 'JOB':
                     # do the job and send the result
                     start = time.time()

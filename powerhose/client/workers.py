@@ -1,18 +1,18 @@
-from circus import get_trainer
+from circus import get_arbiter
 from powerhose import logger
 
 
 class Workers(object):
     def __init__(self, cmd, num_workers=5, timeout=1.,
                  check=5., controller='tcp://127.0.0.1:5555', **kw):
-        self.trainer = get_trainer(cmd, num_workers, timeout,
+        self.arbiter = get_arbiter(cmd, num_workers, timeout,
                                    controller=controller, **kw)
 
     def run(self):
         logger.debug('starting workers')
-        self.trainer.start()
+        self.arbiter.start()
 
     def stop(self):
         logger.debug('stopping workers')
-        self.trainer.stop()
+        self.arbiter.stop()
         logger.debug('stopping workers done')

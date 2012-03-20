@@ -59,7 +59,6 @@ class Pinger(threading.Thread):
                     logger.debug('[pinger] ' + str(e))
                     continue
 
-
                 try:
                     events = dict(self.poller.poll(self.duration * 1000))
                 except zmq.ZMQError, e:
