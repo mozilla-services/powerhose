@@ -3,8 +3,9 @@ import zmq
 import sys
 import traceback
 
+
 from powerhose.workermgr import Workers, WorkerRegistration
-from powerhose.util import serialize, unserialize
+from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
 
 
@@ -32,6 +33,8 @@ def timed(func):
 
 class JobRunner(object):
     def __init__(self, endpoint=_ENDPOINT, retries=3):
+        if endpoint.startswith('ipc'):
+            register_ipc_file(endpoint)
         self.started = False
         self.endpoint = endpoint
         self.workers = Workers()

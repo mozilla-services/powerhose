@@ -4,7 +4,7 @@ import threading
 import zmq
 
 from powerhose.client.pinger import Pinger
-from powerhose.util import serialize, unserialize
+from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
 
 
@@ -16,6 +16,8 @@ class Worker(object):
 
     def __init__(self, endpoint, identity, target, timeout=1.):
         self.identity = identity
+        if identity.startswith('ipc'):
+            register_ipc_file(identity)
         self.ctx = zmq.Context()
         self.timeout = timeout * 1000
         self.master = self.ctx.socket(zmq.REQ)
@@ -74,7 +76,7 @@ class Worker(object):
 
     def stop(self):
         self.running = False
-        #self.pinger.stop()
+        self.pinger.stop()
         time.sleep(.1)
         self.ctx.destroy(0)
 
@@ -83,7 +85,7 @@ class Worker(object):
         self.register()
         self.pinger.start()
 
-        while self.running: # and not self.pinger.unresponsive:
+        while self.running and not self.pinger.unresponsive:
             try:
                 events = dict(self.poller.poll(self.timeout))
             except zmq.ZMQError:

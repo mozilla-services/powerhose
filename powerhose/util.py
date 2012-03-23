@@ -1,6 +1,9 @@
+import os
+import atexit
 
 
 _SEP = '*****'
+
 
 # will do better later
 def serialize(*seq):
@@ -12,3 +15,18 @@ def serialize(*seq):
 
 def unserialize(data):
     return data.split(_SEP)
+
+
+_IPC_FILES = []
+
+
+@atexit.register
+def _cleanup_ipc_files():
+    for file in _IPC_FILES:
+        file = file.split('ipc://')[-1]
+        if os.path.exists(file):
+            os.remove(file)
+
+
+def register_ipc_file(file):
+    _IPC_FILES.append(file)
