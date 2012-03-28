@@ -1,4 +1,4 @@
 gevent
-zmq
+pyzmq
 gevent_zmq
 circus
