@@ -1,1 +1,4 @@
 gevent
+zmq
+gevent_zmq
+circus
