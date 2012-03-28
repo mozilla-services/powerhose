@@ -37,7 +37,7 @@ There's also tools like RabbitMQ that can let you set up a queue
 where the master put some job to be performed, workers can pick up.
 
 But here, we're talking about running specific CPU-Bound jobs
-as soon as possible, synchronously, with no persistency at all.
+as fast as possible, synchronously, with no persistency at all.
 
 Our driving use case is Mozilla's Token Server -
 https://wiki.mozilla.org/Services/Sagrada/TokenServer
@@ -49,14 +49,21 @@ services.
 Powerhose is our attempt to solve this issue, and is based
 on ZeroMQ.
 
+We chose ZeroMQ because:
+
+- it's insanely fast.
+- it greatly simplifies our code.
+- it can work over TCP, IPC (Inter Process Communication) or even in
+  the same process.
+
 Powerhose allows us to:
 
 - deploy dynamically as many workers as we want, event on other
-  servers.
+  servers when it makes sense.
 
 - write workers in C++
 
 - greatly simplify the usage for our Python apps, since all it
-  takes is a single :func:execute call to get the job done.
+  takes is a single :func:`execute` call to get the job done.
 
 Read more about this here: http://ziade.org/2012/02/06/scaling-crypto-work-in-python/

@@ -10,10 +10,19 @@ Powerhose
 .. image:: images/medium-powerhose.png
    :align: right
 
-Powerhose is a single master / multiple worker zmq lib, that can be
+Powerhose is a single master / multiple worker ZeroMQ library, that can be
 used to push some work to specialized workers.
 
-Powerhose uses Circus to manage the life of workers.
+ZeroMQ is mainly used as an IPC library, so the master and the workers can
+interact, but since ZeroMQ can use TCP as a transport, Powerhose can also
+work with distant workers.
+
+Powerhose uses `Circus <http://circus.readthedocs.org>`_ to manage the life
+of workers.
+
+If you have CPU-Bound tasks that could be performed in a specialized C++
+program for example, Powerhose is a library you could use to ease your
+life
 
 If you are curious about why we wrote this library see :ref:`why`.
 
@@ -21,6 +30,8 @@ If you are curious about why we wrote this library see :ref:`why`.
 Example
 =======
 
+Here's a full example of library usage: we want to delegate some maths
+to a specialized worker.
 
 Worker
 ------
