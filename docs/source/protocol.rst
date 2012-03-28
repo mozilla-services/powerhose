@@ -1,0 +1,79 @@
+Protocol
+========
+
+Principles:
+
+- The system is based on a single master and multiple workers.
+- The worker registers itself to the master, provides a socket,
+  and wait for some work on it.
+- Workers are performing the work synchronously and send back the
+  result immediatly.
+- The master use a simple round robin strategy to send some work
+  to the workers. If all are busy, it waits a bit before it times out.
+- The worker pings the master on a regular basis and exits if it's
+  unable to reach it. It attempts several time to reconnect to give
+  a chance to the master to come back.
+- Workers are language agnostic
+- the system is not responsible to respawn a master or a worker that
+  dies. It can use daemontools for this.
+
+
+Registering a worker
+--------------------
+
+- The Master binds an *endpoint* and wait for workers to connect to it
+- The Worker connects to the master and provides its own socket.
+- The Master adds the worker in the list of available workers, and
+  connect to the worker socket.
+
+
+::
+
+   W                          M
+   --- PING + endoint  -->   Register the Worker
+   <-- PONG            ---
+
+
+A worker can also unregister itself::
+
+   W                      M
+   --- REMOVE       -->   Register the Worker
+   <-- REMOVED      ---
+
+
+
+Performing a task
+-----------------
+
+- The Master chooses the next worker in the queue of available workers
+- Once the master has a worker, it removes it from the queue and send work
+  to it.
+- The worker peforms the job synchronously then return the result.
+- The master waits for the result, and after a certain timeout, ask another
+  worker and remove the laggy worker from the queue
+- The master gets back the result, and put back the worker in the queue
+
+
+::
+
+ M                 W
+   --> JOB         --> do the job
+   <-- JOBRES      ---
+
+
+
+Heartbeat
+---------
+
+- The worker pings the master every N seconds.
+- If the master fails to answer after several attempts, the worker exits
+- The master that receives a ping from a unknown worker, registers it
+  by adding it to the queue.
+
+::
+
+   W                      M
+   --- PING + endpoint   -->   possibly : Register the Worker
+   <-- PONG              ---
+
+
