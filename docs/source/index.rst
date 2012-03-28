@@ -10,10 +10,12 @@ Powerhose
 .. image:: images/medium-powerhose.png
    :align: right
 
-Powerhose is a single master/ multiple worker zmq lib, that can be used to
-push some work to specialized workers.
+Powerhose is a single master / multiple worker zmq lib, that can be
+used to push some work to specialized workers.
 
 Powerhose uses Circus to manage the life of workers.
+
+If you are curious about why we wrote this library see :ref:`why`.
 
 
 Example
@@ -129,7 +131,7 @@ More documentation
    installation
    library
    protocol
-
+   why
 
 Contributions and Feedback
 --------------------------
