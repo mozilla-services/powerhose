@@ -1,3 +1,8 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+""" Jobs runner.
+"""
 import time
 import zmq
 import sys
@@ -32,6 +37,23 @@ def timed(func):
 
 
 class JobRunner(object):
+    """Class that sends jobs to workers.
+
+        JobRunner does two things:
+
+        1. runs a :class:`WorkerRegistration` instance which is
+           responsible for the registration of workers.
+
+        2. offers a method to execute jobs.
+
+        Options:
+
+        - **endpoint**: The ZMQ endpoint for workers registration.
+          (default: ipc://master-routing.ipc)
+
+        - **retries**: The number of retries when a job fails.
+          (default: 3)
+    """
     def __init__(self, endpoint=_ENDPOINT, retries=3):
         if endpoint.startswith('ipc'):
             register_ipc_file(endpoint)
@@ -42,6 +64,8 @@ class JobRunner(object):
         self.retries = retries
 
     def start(self):
+        """Starts the registration loop.
+        """
         if self.started:
             return
         logger.debug('Starting registration at ' + self.endpoint)
@@ -49,6 +73,8 @@ class JobRunner(object):
         self.started = True
 
     def stop(self):
+        """Stops the registration loop.
+        """
         if not self.started:
             return
         logger.debug('Stopping registration at ' + self.endpoint)
@@ -56,6 +82,22 @@ class JobRunner(object):
         self.started = False
 
     def execute(self, job, timeout=1.):
+        """Execute a job and return the result.
+
+        Options:
+
+        - **job**: a :class:`Job` instance.
+        - **timeout**: the maximum allowed time in seconds. (default: 1)
+
+        If the job fails to run, this method may raise one of these
+        exceptions:
+
+        - :class:`TimeoutError`: timed out.
+        - :class:`ExecutionError`: the worker has failed.
+
+        In case of an execution error, the exception usually holds
+        more details on the failure.
+        """
         from powerhose import logger
         e = None
 
