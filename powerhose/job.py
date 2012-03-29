@@ -4,6 +4,7 @@
 """ Job class.
 """
 
+
 class Job(object):
     """A Job is just a container that's passed into the wire.
 
