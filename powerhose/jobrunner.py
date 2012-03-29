@@ -121,7 +121,7 @@ class JobRunner(object):
         try:
             logger.debug('getting a worker')
 
-            with self.workers.worker() as worker:
+            with self.workers.get_context() as worker:
                 try:
                     worker.send(data, zmq.NOBLOCK)
                 except zmq.ZMQError, e:

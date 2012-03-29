@@ -1,7 +1,8 @@
 .. _library:
 
+=======
 Library
--------
+=======
 
 .. note::
 
@@ -12,10 +13,74 @@ Library
     required to introspect the code. (typically: pyzmq)
 
 
+Powerhose is organized into a simple hierarchy of classes:
+
+- :class:`Job` -- A class that holds a job to be performed.
+
+- :class:`Workers` -- A queue of workers. A worker is just a ZMQ socket with
+  and *identity* attribute.
+
+- :class:`WorkerRegistration` -- A thread that opens a registration channel,
+  and register workers into the :class:`Workers` queue.
+
+- :class:`JobRunner` -- The class that orchestrates everything. It creates
+  a :class:`Workers` queue, starts a :class:`WorkerRegistration` thread, and
+  provide an :func:`execute` function to pass :class:`Job` instances to
+  workers.
+
+Job
+===
+
+
 .. autoclass:: powerhose.job.Job
    :members: add_header, serialize, load_from_string
 
 
+Example::
+
+    >>> from powerhose.job import Job
+    >>> job = Job('4*2')
+    >>> job.serialize()
+    'NONE:::4*2'
+    >>> Job.load_from_string('NONE:::4*2')
+    <powerhose.job.Job object at 0x107b78c50>
+    >>> Job.load_from_string('NONE:::4*2').data
+    '4*2'
+
+
+JobRunner
+=========
+
 .. autoclass:: powerhose.jobrunner.JobRunner
    :members: execute,start,stop
+
+
+Example::
+
+   >>> from powerhose.job import Job
+    >>> job = Job('4*2')
+    >>> from powerhose.jobrunner import JobRunner
+    >>> runner = JobRunner()
+    >>> runner.start()              # starts the registration
+    >>> runner.execute(job)
+    Traceback (most recent call last):
+    ...
+    raise TimeoutError("Could not get a worker")
+
+
+In this example, since we did not run any worker, :func:`execute` fails
+after 5 seconds (default timeout).
+
+
+Workers
+=======
+
+.. autoclass:: powerhose.workermgr.Workers
+   :members: get_context,acquire,release,delete,add
+
+WorkerRegistration
+==================
+
+.. autoclass:: powerhose.workermgr.WorkerRegistration
+   :members: stop,start
 
