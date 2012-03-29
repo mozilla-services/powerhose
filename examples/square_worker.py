@@ -13,8 +13,8 @@ if __name__ == '__main__':
         print(sys.argv)
         raise
 
-    def square(*args):
-        number = int((args)[0][1])
+    def square(job):
+        number = int(job.data)
         return str(number * number)
 
     worker = Worker(endpoint, workpoint, target=square)
