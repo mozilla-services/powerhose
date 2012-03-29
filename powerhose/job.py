@@ -47,8 +47,8 @@ class Job(object):
         if len(self.headers) == 0:
             headers = ['NONE']
         else:
-            headers = ['%s:%s' (name, value) for name, value in
-                        self.headers.items()]
+            headers = ['%s:%s' % (name, value) for name, value in
+                       self.headers.items()]
 
         headers = '::'.join(headers)
         return headers + ':::' + self.data
