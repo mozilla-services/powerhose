@@ -1,6 +1,6 @@
 import sys
 
-from powerhose.jobrunner import _WORKERS_ENDPOINT
+from powerhose.router import _WORKERS_ENDPOINT
 from powerhose.worker import Worker
 
 

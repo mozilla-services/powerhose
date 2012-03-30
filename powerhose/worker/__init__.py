@@ -1,2 +1,2 @@
 
-from powerhoser.worker.worker import Worker
+from powerhose.worker._worker import Worker
