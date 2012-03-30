@@ -19,8 +19,8 @@ build:
 	cd $(DIR); ar cq libhose.a $(LIBOFILES)
 
 buildex:
-	cd examples; rm -f square_worker
-	cd examples; g++ -o square_worker square_worker.cpp -lhose $(OPTS) $(INCLUDEDIR) $(LIBDIR) $(LIBS)
+	cd examples; rm -f echo_worker
+	cd examples; g++ -o echo_worker echo_worker.cpp -lhose $(OPTS) $(INCLUDEDIR) $(LIBDIR) $(LIBS)
 
 test: bin/nosetests
 	bin/nosetests -s powerhose

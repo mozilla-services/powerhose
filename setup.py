@@ -26,4 +26,5 @@ setup(name='powerhose',
       entry_points="""
       [console_scripts]
       soaker = powerhose.soaker:main
+      powerhose-router = powerhose.router:main
       """)

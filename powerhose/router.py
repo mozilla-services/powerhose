@@ -8,6 +8,8 @@ import zmq
 import sys
 import traceback
 import random
+import sys
+import argparse
 
 from powerhose.registration import Registration
 from powerhose.util import serialize, unserialize, register_ipc_file
@@ -195,3 +197,32 @@ class Router(object):
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
             raise ExecutionError('\n'.join(exc))
+
+
+def main(args=sys.argv):
+    parser = argparse.ArgumentParser(description='Run some watchers.')
+
+    parser.add_argument('--endpoint', dest='endpoint', default=_ENDPOINT,
+                        help="ZMQ socket to receive jobs.")
+
+    parser.add_argument('--workers-endpoint', dest='workers_endpoint',
+                        default=_WORKERS_ENDPOINT,
+                        help="ZMQ socket for worker registration.")
+
+    parser.add_argument('--retries', dest='retries', default=3,
+                        help="Number of retries on failure.")
+
+
+    args = parser.parse_args()
+
+    router = Router(endpoint=args.endpoint,
+                    workers_endpoint=args.workers_endpoint,
+                    retries=args.retries)
+    try:
+        router.start()
+    finally:
+        router.stop()
+
+
+if __name__ == '__main__':
+    main()
