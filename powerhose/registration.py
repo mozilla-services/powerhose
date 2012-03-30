@@ -18,7 +18,7 @@ class TimeoutError(Exception):
 _WEIGHTS = range(10)
 
 
-class WorkerRegistration(Thread):
+class Registration(Thread):
     """Thread that manages the worker registration channel.
 
     Options:

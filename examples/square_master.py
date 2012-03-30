@@ -1,9 +1,8 @@
-from powerhose.jobrunner import JobRunner
+from powerhose.router import Router
 
 
-job = JobRunner()
-
+router = Router()
 try:
-    job.start()
+    router.start()
 finally:
-    job.stop()
+    router.stop()

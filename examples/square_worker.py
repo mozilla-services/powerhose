@@ -1,9 +1,7 @@
 import sys
-from powerhose.client.worker import Worker
-from hashlib import sha512
-from powerhose.jobrunner import _WORKERS_ENDPOINT
 
-data = "wqidqibqwjibwx" * 100000
+from powerhose.jobrunner import _WORKERS_ENDPOINT
+from powerhose.worker import Worker
 
 
 if __name__ == '__main__':

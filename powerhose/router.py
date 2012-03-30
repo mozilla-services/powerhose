@@ -9,7 +9,7 @@ import sys
 import traceback
 import random
 
-from powerhose.workermgr import WorkerRegistration
+from powerhose.registration import Registration
 from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
 
@@ -38,12 +38,12 @@ def timed(func):
     return _timed
 
 
-class JobRunner(object):
+class Router(object):
     """Class that sends jobs to workers.
 
-        JobRunner does two things:
+        Router does two things:
 
-        1. runs a :class:`WorkerRegistration` instance which is
+        1. runs a :class:`Registration` instance which is
            responsible for the registration of workers.
 
         2. offers a method to execute jobs.
@@ -70,10 +70,9 @@ class JobRunner(object):
         self.started = False
         self.endpoint = endpoint
         self.workers_endpoint = workers_endpoint
-        #self.workers = Workers()
         self.workers = {}
-        self.registration = WorkerRegistration(self.workers,
-                                               self.workers_endpoint)
+        self.registration = Registration(self.workers,
+                                         self.workers_endpoint)
         self.retries = retries
 
     def start(self):
@@ -93,7 +92,7 @@ class JobRunner(object):
         poll_timeout = 1000
         self.started = True
 
-        # XXX
+        # XXX where to put this ...
         while len(self.workers) == 0:
             time.sleep(0.1)
 
@@ -149,21 +148,14 @@ class JobRunner(object):
         if e is not None:
             raise e
 
-    # XXX timeout is for each poll()
     @timed
     def __execute(self, job, timeout=1.):
         worker = None
         timeout *= 1000.   # timeout is in ms
         data = serialize("JOB", job)
-        logger.debug('Lets run that job')
         try:
             logger.debug('getting a worker')
-
-
             worker = random.choice(self.workers.values())
-
-            #with self.workers.get_context() as worker:
-            print('sending the job')
             try:
                 worker.send(data, zmq.NOBLOCK)
             except zmq.ZMQError, e:

@@ -6,7 +6,7 @@ import threading
 
 import zmq
 
-from powerhose.client.pinger import Pinger
+from powerhose.worker.pinger import Pinger
 from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
 from powerhose.job import Job
