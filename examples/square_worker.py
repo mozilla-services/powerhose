@@ -1,9 +1,9 @@
 import sys
 from powerhose.client.worker import Worker
+from hashlib import sha512
+from powerhose.jobrunner import _WORKERS_ENDPOINT
 
-
-endpoint = "ipc:///tmp/master-routing.ipc"
-#workpoint = "ipc://worker-routing.ipc"
+data = "wqidqibqwjibwx" * 100000
 
 
 if __name__ == '__main__':
@@ -14,10 +14,9 @@ if __name__ == '__main__':
         raise
 
     def square(job):
-        number = int(job.data)
-        return str(number * number)
+        return job.data
 
-    worker = Worker(endpoint, workpoint, target=square)
+    worker = Worker(_WORKERS_ENDPOINT, workpoint, target=square)
     try:
         worker.run()
     except KeyboardInterrupt:

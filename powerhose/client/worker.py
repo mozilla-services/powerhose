@@ -9,6 +9,7 @@ import zmq
 from powerhose.client.pinger import Pinger
 from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
+from powerhose.job import Job
 
 
 class RegisterError(Exception):
@@ -102,12 +103,12 @@ class Worker(object):
                     # do the job and send the result
                     start = time.time()
                     try:
-                        res = self.target(msg[1:])
+                        res = self.target(Job.load_from_string(msg[1]))
                     except Exception, e:
                         # XXX log the error
                         res = str(e)
                     logger.debug('%.6f' % (time.time() - start))
-                    socket.send(serialize("JOBRES", msg[1], res))
+                    socket.send(serialize("JOBRES", res))  #msg[1], res))
                 else:
                     socket.send('ERROR')
 

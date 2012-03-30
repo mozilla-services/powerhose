@@ -10,7 +10,7 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
     CHANGES = f.read()
 
 
-requires = ['pyzmq', 'gevent', 'gevent_zeromq', 'circus']
+requires = ['pyzmq', 'circus']
 
 
 setup(name='powerhose',

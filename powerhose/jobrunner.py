@@ -7,9 +7,9 @@ import time
 import zmq
 import sys
 import traceback
+import random
 
-
-from powerhose.workermgr import Workers, WorkerRegistration
+from powerhose.workermgr import WorkerRegistration
 from powerhose.util import serialize, unserialize, register_ipc_file
 from powerhose import logger
 
@@ -22,7 +22,9 @@ class ExecutionError(Exception):
     pass
 
 
-_ENDPOINT = "ipc://master-routing.ipc"
+
+_ENDPOINT = "ipc:///tmp/powerhose-routing.ipc"
+_WORKERS_ENDPOINT = "ipc:///tmp/powerhose-registration.ipc"
 
 
 def timed(func):
@@ -48,29 +50,65 @@ class JobRunner(object):
 
         Options:
 
-        - **endpoint**: The ZMQ endpoint for workers registration.
+        - **endpoint**: The ZMQ endpoint for receiving Jobs.
+
+        - **workers_endpoint**: The ZMQ endpoint for workers registration.
           (default: ipc://master-routing.ipc)
 
         - **retries**: The number of retries when a job fails.
           (default: 3)
     """
-    def __init__(self, endpoint=_ENDPOINT, retries=3):
+    def __init__(self, endpoint=_ENDPOINT,
+                 workers_endpoint=_WORKERS_ENDPOINT, retries=3):
         if endpoint.startswith('ipc'):
             register_ipc_file(endpoint)
+
+        if workers_endpoint.startswith('ipc'):
+            register_ipc_file(workers_endpoint)
+
+        self.context = zmq.Context()
         self.started = False
         self.endpoint = endpoint
-        self.workers = Workers()
-        self.registration = WorkerRegistration(self.workers, self.endpoint)
+        self.workers_endpoint = workers_endpoint
+        #self.workers = Workers()
+        self.workers = {}
+        self.registration = WorkerRegistration(self.workers,
+                                               self.workers_endpoint)
         self.retries = retries
 
     def start(self):
-        """Starts the registration loop.
+        """Starts the registration loop and then wait for some job.
         """
         if self.started:
             return
+
         logger.debug('Starting registration at ' + self.endpoint)
         self.registration.start()
+        logger.debug('Starting Job channel.')
+        client = self.context.socket(zmq.REP)
+        client.identity = 'master'
+        client.bind(self.endpoint)
+        poller = zmq.Poller()
+        poller.register(client, zmq.POLLIN)
+        poll_timeout = 1000
         self.started = True
+
+        # XXX
+        while len(self.workers) == 0:
+            time.sleep(0.1)
+
+
+        while self.started:
+            try:
+                events = dict(poller.poll(poll_timeout))
+            except zmq.ZMQError, e:
+                logger.debug("The poll failed")
+                logger.debug(str(e))
+                break
+
+            for socket in events:
+                job = socket.recv()
+                socket.send(self._execute(job))
 
     def stop(self):
         """Stops the registration loop.
@@ -81,7 +119,7 @@ class JobRunner(object):
         self.registration.stop()
         self.started = False
 
-    def execute(self, job, timeout=1.):
+    def _execute(self, job, timeout=1.):
         """Execute a job and return the result.
 
         Options:
@@ -103,7 +141,7 @@ class JobRunner(object):
 
         for i in range(self.retries):
             try:
-                return self._execute(job, timeout)
+                return self.__execute(job, timeout)
             except (TimeoutError, ExecutionError), e:
                 logger.debug(str(e))
                 logger.debug('retrying - %d' % (i + 1))
@@ -113,49 +151,53 @@ class JobRunner(object):
 
     # XXX timeout is for each poll()
     @timed
-    def _execute(self, job, timeout=1.):
+    def __execute(self, job, timeout=1.):
         worker = None
         timeout *= 1000.   # timeout is in ms
-        data = serialize("JOB", job.serialize())
+        data = serialize("JOB", job)
         logger.debug('Lets run that job')
         try:
             logger.debug('getting a worker')
 
-            with self.workers.get_context() as worker:
+
+            worker = random.choice(self.workers.values())
+
+            #with self.workers.get_context() as worker:
+            print('sending the job')
+            try:
+                worker.send(data, zmq.NOBLOCK)
+            except zmq.ZMQError, e:
+                raise ExecutionError(str(e))
+
+            poller = zmq.Poller()
+            poller.register(worker, zmq.POLLIN)
+
+            try:
+                events = dict(poller.poll(timeout))
+            except zmq.ZMQError, e:
+                raise ExecutionError(str(e))
+
+            if events == {}:
+                raise TimeoutError()
+
+            for socket in events:
                 try:
-                    worker.send(data, zmq.NOBLOCK)
+                    msg = unserialize(socket.recv())
                 except zmq.ZMQError, e:
                     raise ExecutionError(str(e))
 
-                poller = zmq.Poller()
-                poller.register(worker, zmq.POLLIN)
-
-                try:
-                    events = dict(poller.poll(timeout))
-                except zmq.ZMQError, e:
-                    raise ExecutionError(str(e))
-
-                if events == {}:
-                    raise TimeoutError()
-
-                for socket in events:
-                    try:
-                        msg = unserialize(socket.recv())
-                    except zmq.ZMQError, e:
-                        raise ExecutionError(str(e))
-
-                    if msg[0] == 'JOBRES':
-                        # we got a result
-                        return msg[-1]
-                    else:
-                        raise NotImplementedError(str(msg))
+                if msg[0] == 'JOBRES':
+                    # we got a result
+                    return msg[-1]
+                else:
+                    raise NotImplementedError(str(msg))
 
         except Exception, e:
             logger.debug('something went wrong')
 
             if worker is not None:
                 # killing this worker - it can come back on the next ping
-                self.workers.delete(worker.identity)
+                del self.workers[worker.identity]
 
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
