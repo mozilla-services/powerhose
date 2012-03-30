@@ -1,16 +1,16 @@
-from powerhose.router import _ENDPOINT
-from powerhose.job import Job
 import random
-import zmq
+import sys
 
-ctx = zmq.Context()
-master = ctx.socket(zmq.REQ)
-master.connect(_ENDPOINT)
+from powerhose.client import Client
+from powerhose.job import Job
+
+
+client = Client()
 
 while True:
     data = str(random.randint(1, 100000))
     job = Job(data)
-    master.send(job.serialize())
-    res = master.recv()
+    res = client.execute(job)
     assert res == data
-    print '.'
+    sys.stdout.write('.')
+    sys.stdout.flush()
