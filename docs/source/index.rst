@@ -31,7 +31,7 @@ If you are curious about why we wrote this library see :ref:`why`.
 Example
 =======
 
-Here's a full example of library usage: we want to delegate some maths
+Here's a full example of library usage: we want to delegate some work
 to a specialized worker.
 
 Let's create a function that just echoes back what was sent to it,
@@ -72,11 +72,54 @@ shell::
     'test'
 
 
-Congrats ! You have a powerhose system up and running !
+Congrats ! You have a Powerhose system up and running !
+
+
+Running several workers
+=======================
+
+The simplest way to run a Powerhose system is to use Circus. Let's say
+you want to run 5 workers of the previous example, and make sure
+they are always up and running.
+
+Create the following .ini file::
+
+    [circus]
+    check_delay = 5
+    endpoint = tcp://127.0.0.1:5555
+
+    [watcher:master]
+    cmd = powerhose-router
+    numprocesses = 1
+
+    [watcher:workers]
+    cmd = powerhose-worker
+    args = example.echo
+    numprocesses = 5
+
+
+That's it ! Circus will make sure every process stays alive, and will also
+offer nice features like letting you add or remove workers live::
+
+    $ circusd circus.ini
+    [INFO] Starting master on pid 25978
+    [INFO] master started
+    [INFO] workers started
+    [INFO] Arbiter now waiting for commands
+
+    $ circusctl list
+    master,workers
+
+    $ circusctl incr workers
+    6
+
+    $ bin/circusctl incr workers
+    7
+
 
 
 More documentation
-------------------
+==================
 
 .. toctree::
    :maxdepth: 2
@@ -87,7 +130,7 @@ More documentation
    why
 
 Contributions and Feedback
---------------------------
+==========================
 
 You can reach us for any feedback, bug report, or to contribute, at
 https://github.com/mozilla-services/powerhose
