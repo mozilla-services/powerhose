@@ -26,7 +26,8 @@ class ExecutionError(Exception):
 
 
 _ENDPOINT = "ipc:///tmp/powerhose-routing.ipc"
-_WORKERS_ENDPOINT = "ipc:///tmp/powerhose-registration.ipc"
+_REGISTRATION_ENDPOINT = "ipc:///tmp/powerhose-registration.ipc"
+_WORKER_ENDPOINT = "ipc:///tmp/worker-$WID.ipc"
 
 
 def timed(func):
@@ -54,27 +55,27 @@ class Router(object):
 
         - **endpoint**: The ZMQ endpoint for receiving Jobs.
 
-        - **workers_endpoint**: The ZMQ endpoint for workers registration.
+        - **registration_endpoint**: The ZMQ endpoint for workers registration.
           (default: ipc://master-routing.ipc)
 
         - **retries**: The number of retries when a job fails.
           (default: 3)
     """
     def __init__(self, endpoint=_ENDPOINT,
-                 workers_endpoint=_WORKERS_ENDPOINT, retries=3):
+                 registration_endpoint=_REGISTRATION_ENDPOINT, retries=3):
         if endpoint.startswith('ipc'):
             register_ipc_file(endpoint)
 
-        if workers_endpoint.startswith('ipc'):
-            register_ipc_file(workers_endpoint)
+        if registration_endpoint.startswith('ipc'):
+            register_ipc_file(registration_endpoint)
 
         self.context = zmq.Context()
         self.started = False
         self.endpoint = endpoint
-        self.workers_endpoint = workers_endpoint
+        self.registration_endpoint = registration_endpoint
         self.workers = {}
         self.registration = Registration(self.workers,
-                                         self.workers_endpoint)
+                                         self.registration_endpoint)
         self.retries = retries
 
     def start(self):
@@ -205,8 +206,8 @@ def main(args=sys.argv):
     parser.add_argument('--endpoint', dest='endpoint', default=_ENDPOINT,
                         help="ZMQ socket to receive jobs.")
 
-    parser.add_argument('--workers-endpoint', dest='workers_endpoint',
-                        default=_WORKERS_ENDPOINT,
+    parser.add_argument('--workers-endpoint', dest='registration_endpoint',
+                        default=_REGISTRATION_ENDPOINT,
                         help="ZMQ socket for worker registration.")
 
     parser.add_argument('--retries', dest='retries', default=3,
@@ -216,10 +217,12 @@ def main(args=sys.argv):
     args = parser.parse_args()
 
     router = Router(endpoint=args.endpoint,
-                    workers_endpoint=args.workers_endpoint,
+                    registration_endpoint=args.registration_endpoint,
                     retries=args.retries)
     try:
         router.start()
+    except KeyboardInterrupt:
+        pass
     finally:
         router.stop()
 
