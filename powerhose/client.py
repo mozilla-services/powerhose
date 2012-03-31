@@ -1,6 +1,8 @@
-from powerhose.router import _ENDPOINT
 import random
 import zmq
+
+from powerhose.router import _ENDPOINT
+from powerhose.job import Job
 
 
 class Client(object):
@@ -11,5 +13,7 @@ class Client(object):
         self.master.connect(_ENDPOINT)
 
     def execute(self, job):
+        if isinstance(job, str):
+            job = Job(job)
         self.master.send(job.serialize())
         return self.master.recv()
