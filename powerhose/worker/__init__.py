@@ -55,7 +55,7 @@ def main(args=sys.argv):
     parser.add_argument('--endpoint', dest='endpoint', default=_WORKER_ENDPOINT,
                         help="ZMQ socket to receive jobs.")
 
-    parser.add_argument('--worker-endpoint', dest='workpoint',
+    parser.add_argument('--worker-endpoint', dest='registration_endpoint',
                         default=_REGISTRATION_ENDPOINT,
                         help="ZMQ socket where the worker will register.")
 
@@ -65,7 +65,11 @@ def main(args=sys.argv):
     sys.path.insert(0, os.getcwd())  # XXX
     target = resolve_name(args.target)
 
-    worker = Worker(args.endpoint, args.workpoint, target=target)
+    print('Worker registers at %s' % args.registration_endpoint)
+    print('Worker receives job at %s' % args.endpoint)
+    worker = Worker(args.registration_endpoint,
+                    args.endpoint,
+                    target=target)
 
     try:
         worker.run()

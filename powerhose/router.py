@@ -219,6 +219,10 @@ def main(args=sys.argv):
     router = Router(endpoint=args.endpoint,
                     registration_endpoint=args.registration_endpoint,
                     retries=args.retries)
+
+    print('Listening to incoming jobs at %s' % args.endpoint)
+    print('Workers may register at %s' % args.registration_endpoint)
+
     try:
         router.start()
     except KeyboardInterrupt:
