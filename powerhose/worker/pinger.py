@@ -52,7 +52,7 @@ class Pinger(threading.Thread):
                 time.sleep(1.)
                 continue
 
-            with self.locker:
+            #with self.locker:
                 try:
                     data = serialize('PING', self.identity)
                     logger.debug('[pinger] Pinging with ' + data)

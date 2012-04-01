@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import time
 import threading
+import os
 
 import zmq
 
@@ -19,6 +20,9 @@ class RegisterError(Exception):
 class Worker(object):
 
     def __init__(self, endpoint, identity, target, timeout=1.):
+        if '$WID' in identity:
+            identity = identity.replace('$WID', str(os.getpid()))
+
         self.identity = identity
         if identity.startswith('ipc'):
             register_ipc_file(identity)
@@ -50,9 +54,9 @@ class Worker(object):
         self.registered = True
 
     def _msg(self, req, rep):
-        self.pinger.disable()
+        #self.pinger.disable()
         try:
-            with self.locker:
+            #with self.locker:
                 poller = zmq.Poller()
                 poller.register(self.master, zmq.POLLIN)
 
@@ -76,7 +80,8 @@ class Worker(object):
                         if res != rep:
                             raise RegisterError(res)
         finally:
-            self.pinger.enable()
+            #self.pinger.enable()
+            pass
 
     def stop(self):
         self.running = False

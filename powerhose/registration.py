@@ -76,7 +76,7 @@ class Registration(Thread):
                     if msg[-1] not in self.workers:
                         name = msg[-1]
                         logger.debug("Registered " + name)
-                        print('Registered')
+                        print('Registered %s' % msg[-1])
                         # keep track of that worker
                         work = self.context.socket(zmq.REQ)
                         work.connect(name)
