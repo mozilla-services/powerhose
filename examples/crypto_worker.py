@@ -1,12 +1,14 @@
 # taken from pycryptopp
 from pycryptopp.publickey import ecdsa, ed25519, rsa
-import random as insecurerandom
+import random
 from powerhose.job import Job
+import binascii
+import os
+import sys
 
 
 def insecurerandstr(n):
-    return ''.join(map(chr, map(insecurerandom.randrange, [0]*n, [256]*n)))
-
+    return ''.join(map(chr, map(random.randrange, [0]*n, [256]*n)))
 
 
 algs = {}
@@ -14,10 +16,11 @@ algs = {}
 
 class ECDSA256(object):
     def __init__(self):
-        self.seed = insecurerandstr(32)
+        self.seed = insecurerandstr(12)
+        self.signer = ecdsa.SigningKey(self.seed)
 
     def sign(self, msg):
-        return signer.sign(msg)
+        return self.signer.sign(msg)
 
 algs['ECDSA256'] = ECDSA256()
 
@@ -65,6 +68,14 @@ def sign(job):
     return ob.sign(msg)
 
 
+def run():
+    data = binascii.b2a_hex(os.urandom(256))[:256]
+    job = Job(data + '--' + random.choice(algs.keys()))
+    return sign(job)
+
+
 if __name__ == '__main__':
-    job = Job('somedata--RSA2048')
-    print sign(job)
+    while True:
+        res = run()
+        sys.stdout.write('.')
+        sys.stdout.flush()
