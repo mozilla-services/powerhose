@@ -27,4 +27,5 @@ setup(name='powerhose',
       [console_scripts]
       powerhose-broker = powerhose.broker:main
       powerhose-worker = powerhose.worker:main
+      powerhose = powerhose:main
       """)

@@ -1,6 +1,7 @@
 import zmq
 
-from powerhose.broker import _FRONTEND, TimeoutError
+from powerhose.broker import _FRONTEND
+from powerhose.exc import TimeoutError
 from powerhose.job import Job
 from powerhose.util import send, recv
 from powerhose import logger
