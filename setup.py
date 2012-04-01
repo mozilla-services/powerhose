@@ -25,6 +25,6 @@ setup(name='powerhose',
       url='https://github.com/mozilla-services/cornice',
       entry_points="""
       [console_scripts]
-      powerhose-router = powerhose.router:main
+      powerhose-broker = powerhose.broker:main
       powerhose-worker = powerhose.worker:main
       """)

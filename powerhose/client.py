@@ -1,19 +1,31 @@
-import random
 import zmq
 
-from powerhose.router import _ENDPOINT
+from powerhose.broker import _FRONTEND, TimeoutError
 from powerhose.job import Job
+from powerhose.util import send, recv
+from powerhose import logger
 
 
 class Client(object):
 
-    def __init__(self, endpoint=_ENDPOINT):
+    def __init__(self, frontend=_FRONTEND, timeout=.5):
         self.ctx = zmq.Context()
         self.master = self.ctx.socket(zmq.REQ)
-        self.master.connect(_ENDPOINT)
+        self.master.connect(frontend)
+        logger.debug('Client connected to %s' % frontend)
+        self.poller = zmq.Poller()
+        self.poller.register(self.master, zmq.POLLIN)
+        self.timeout = timeout * 1000
 
     def execute(self, job):
         if isinstance(job, str):
             job = Job(job)
-        self.master.send(job.serialize())
-        return self.master.recv()
+
+        send(self.master, job.serialize())
+
+        socks = dict(self.poller.poll(self.timeout))
+
+        if socks.get(self.master) == zmq.POLLIN:
+            return recv(self.master)
+
+        raise TimeoutError()

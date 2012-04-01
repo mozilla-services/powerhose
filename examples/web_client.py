@@ -1,17 +1,18 @@
 from wsgiref.simple_server import make_server
 import json
 import sys
+import time
 
 from powerhose.client import Client
 from powerhose.job import Job
+from powerhose.util import set_logger
 
+set_logger(True)
 
 client = Client()
 
 
 def application(environ, start_response):
-    sys.stdout.write('.')
-    sys.stdout.flush()
     status = '200 OK'
     headers = [('Content-type', 'text/html')]
     start_response(status, headers)
@@ -22,11 +23,12 @@ def application(environ, start_response):
         data[key] = value
 
     job = Job(json.dumps(data))
+
+    start = time.time()
     try:
         return client.execute(job)
     finally:
-        sys.stdout.write('+')
-        sys.stdout.flush()
+        print('Time : %.4f\n' % (time.time() - start))
 
 
 if __name__ == '__main__':
