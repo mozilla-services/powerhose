@@ -28,12 +28,15 @@ def get_cluster(target, numprocesses=5, working_dir='.', logfile='stdout',
                  'cmd': broker_cmd,
                  'working_dir': working_dir,
                  'shell': True,
+                 'executable': python,
                  },
                 {'name': 'workers',
                  'cmd': worker_cmd,
                  'numprocesses': numprocesses,
                  'working_dir': working_dir,
-                 'shell': True}
+                 'shell': True,
+                 'executable': python,
+                 }
                 ]
 
     # XXX add more options
