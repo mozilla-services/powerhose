@@ -6,6 +6,7 @@ import atexit
 import time
 import zmq
 import logging
+import logging.handlers
 import sys
 
 from powerhose import logger
@@ -79,11 +80,16 @@ def recv(socket, max_retries=3, retry_sleep=0.1):
     raise TimeoutError()
 
 
-def set_logger(debug=False, name='powerhose'):
+def set_logger(debug=False, name='powerhose', logfile='stdout'):
     # setting up the logger
     logger_ = logging.getLogger(name)
     logger_.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
+
+    if logfile == 'stdout':
+        ch = logging.StreamHandler()
+    else:
+        ch = logging.handlers.RotatingFileHandler(logfile, mode='a+')
+
     if debug:
         ch.setLevel(logging.DEBUG)
     else:

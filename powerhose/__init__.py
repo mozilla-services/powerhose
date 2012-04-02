@@ -10,21 +10,27 @@ import argparse
 logger = logging.getLogger('powerhose')
 
 
-def get_cluster(target, numprocesses=5, working_dir=None):
+def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout'):
     from circus import get_arbiter
 
     python = sys.executable
 
     watchers = [{'name': 'broker',
                  'cmd': python,
-                 'args': '-m powerhose.broker',
+                 'args': '-m powerhose.broker --logfile ' + logfile,
                  },
                 {'name': 'workers',
                  'cmd': python,
-                 'args': '-m powerhose.worker  ' + target,
+                 'args': '-m powerhose.worker ' + target + '  --logfile '
+                 + logfile,
                  'numprocesses': numprocesses}
                 ]
 
+    logger.debug('Running with Circus.')
+    logger.debug('Commands: ')
+    logger.debug(python + ' -m powerhose.broker --logfile ' + logfile)
+    logger.debug(python + ' -m powerhose.worker ' + target + ' --logfile '
+            + logfile)
     return get_arbiter(watchers)
 
 
@@ -37,13 +43,17 @@ def main(args=sys.argv):
                         help="Debug mode")
     parser.add_argument('--numprocesses', dest='numprocesses', default=5,
                         help="Number of processes to run.")
+    parser.add_argument('--logfile', dest='logfile', default='stdout',
+                        help="File to log in to .")
 
     args = parser.parse_args()
-    set_logger(args.debug, 'powerhose')
-    set_logger(args.debug, 'circus')
+
+    set_logger(args.debug, 'powerhose', args.logfile)
+    set_logger(args.debug, 'circus', args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
     resolve_name(args.target)  # check the callable
-    cluster = get_cluster(args.target, args.numprocesses)
+
+    cluster = get_cluster(args.target, args.numprocesses, logfile=args.logfile)
     try:
         cluster.start()
     except KeyboardInterrupt:

@@ -109,10 +109,12 @@ def main(args=sys.argv):
 
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
+    parser.add_argument('--logfile', dest='logfile', default='stdout',
+                        help="File to log in to .")
 
     args = parser.parse_args()
 
-    set_logger(args.debug)
+    set_logger(args.debug, logfile=args.logfile)
     broker = Broker(frontend=args.frontend, backend=args.backend)
     logger.info('Listening to incoming jobs at %s' % args.frontend)
     logger.info('Workers may register at %s' % args.backend)

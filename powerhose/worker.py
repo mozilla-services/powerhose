@@ -83,10 +83,11 @@ def main(args=sys.argv):
     parser.add_argument('target', help="Fully qualified name of the callable.")
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
+    parser.add_argument('--logfile', dest='logfile', default='stdout',
+                        help="File to log in to .")
 
     args = parser.parse_args()
-
-    set_logger(args.debug)
+    set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
     target = resolve_name(args.target)
 
