@@ -47,11 +47,15 @@ def main(args=sys.argv):
     from powerhose.util import set_logger, resolve_name
 
     parser = argparse.ArgumentParser(description='Run a Powerhose cluster.')
+
     parser.add_argument('target', help="Fully qualified name of the callable.")
+
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
+
     parser.add_argument('--numprocesses', dest='numprocesses', default=5,
                         help="Number of processes to run.")
+
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to .")
 

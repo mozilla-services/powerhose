@@ -9,16 +9,17 @@ import argparse
 
 import zmq
 
-from powerhose.broker import _BACKEND
+from powerhose.broker import _BACKEND, _HEARTBEAT
 from powerhose.util import unserialize, set_logger
 from powerhose import logger
 from powerhose.job import Job
 from powerhose.util import send, resolve_name
+from powerhose.heartbeat import Ping
 
 
 class Worker(object):
 
-    def __init__(self, backend, target, timeout=1.):
+    def __init__(self, backend, target, hearbeat=_HEARTBEAT, timeout=1.):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.timeout = timeout * 1000
@@ -29,25 +30,36 @@ class Worker(object):
         self.running = False
         self.poller = zmq.Poller()
         self.poller.register(self._backend, zmq.POLLIN)
-        self.poll_timeout = None
+        self.ping = Ping(hearbeat, onbeatlost=self.lost)
+
+    def lost(self):
+        logger.info('Master lost ! Quitting..')
+        self.running = False
+        return True
 
     def stop(self):
+        logger.debug('Stopping the worker')
+        self.ping.stop()
         self.running = False
         time.sleep(.1)
         self.ctx.destroy(0)
+        logger.debug('Worker is stopped')
 
     def start(self):
-        logger.debug('Starting the loop')
+        logger.debug('Starting the worker loop')
 
+        # running the pinger
+        self.ping.start()
         self.running = True
 
         while self.running:
             try:
-                socks = dict(self.poller.poll(self.poll_timeout))
+                socks = dict(self.poller.poll(self.timeout))
             except zmq.ZMQError, e:
-                logger.debug("The poll failed")
+                logger.debug("The worker poll failed")
                 logger.debug(str(e))
                 break
+
             try:
                 if socks.get(self._backend) == zmq.POLLIN:
 
@@ -75,6 +87,8 @@ class Worker(object):
                 exc.insert(0, str(e))
                 logger.error('\n'.join(exc))
 
+        logger.debug('Worker loop over')
+
 
 def main(args=sys.argv):
 
@@ -82,11 +96,18 @@ def main(args=sys.argv):
 
     parser.add_argument('--backend', dest='backend', default=_BACKEND,
                         help="ZMQ socket to the broker.")
+
     parser.add_argument('target', help="Fully qualified name of the callable.")
+
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
+
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to .")
+
+    parser.add_argument('--heartbeat', dest='heartbeat',
+                        default=_HEARTBEAT,
+                        help="ZMQ socket for the heartbeat.")
 
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
@@ -99,9 +120,11 @@ def main(args=sys.argv):
     try:
         worker.start()
     except KeyboardInterrupt:
-        pass
+        return 1
     finally:
         worker.stop()
+
+    return 0
 
 
 if __name__ == '__main__':

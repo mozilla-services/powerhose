@@ -11,10 +11,12 @@ import argparse
 
 from powerhose import logger
 from powerhose.util import send, recv, set_logger, register_ipc_file
+from powerhose.heartbeat import Pong
 
 
 _FRONTEND = "ipc:///tmp/powerhose-front.ipc"
 _BACKEND = "ipc:///tmp/powerhose-back.ipc"
+_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
 
 
 def timed(func):
@@ -32,10 +34,11 @@ class Broker(object):
     """Class that route jobs to workers.
 
     """
-    def __init__(self, frontend=_FRONTEND, backend=_BACKEND):
+    def __init__(self, frontend=_FRONTEND, backend=_BACKEND,
+                 heartbeat=_HEARTBEAT):
         logger.debug('Initializing the broker.')
 
-        for endpoint in (frontend, backend):
+        for endpoint in (frontend, backend, heartbeat):
             if endpoint.startswith('ipc'):
                 register_ipc_file(endpoint)
 
@@ -52,6 +55,9 @@ class Broker(object):
         self.poller.register(self._frontend, zmq.POLLIN)
         self.poller.register(self._backend, zmq.POLLIN)
 
+        # heartbeat
+        self.pong = Pong(heartbeat)
+
         # status
         self.started = False
         self.poll_timeout = None
@@ -62,6 +68,9 @@ class Broker(object):
         logger.debug('Starting the loop')
         if self.started:
             return
+
+        # running the heartbeat
+        self.pong.start()
 
         self.started = True
         while self.started:
@@ -96,6 +105,7 @@ class Broker(object):
         """
         if not self.started:
             return
+        self.pong.stop()
         self.started = False
 
 
@@ -109,6 +119,10 @@ def main(args=sys.argv):
                         default=_BACKEND,
                         help="ZMQ socket for workers.")
 
+    parser.add_argument('--heartbeat', dest='heartbeat',
+                        default=_HEARTBEAT,
+                        help="ZMQ socket for the heartbeat.")
+
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
 
@@ -119,7 +133,8 @@ def main(args=sys.argv):
 
     set_logger(args.debug, logfile=args.logfile)
     logger.info('Starting the broker')
-    broker = Broker(frontend=args.frontend, backend=args.backend)
+    broker = Broker(frontend=args.frontend, backend=args.backend,
+                    heartbeat=args.heartbeat)
     logger.info('Listening to incoming jobs at %s' % args.frontend)
     logger.info('Workers may register at %s' % args.backend)
     try:
