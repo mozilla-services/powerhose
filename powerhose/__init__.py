@@ -10,7 +10,7 @@ import argparse
 logger = logging.getLogger('powerhose')
 
 
-def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout',
+def get_cluster(target, numprocesses=5, working_dir='.', logfile='stdout',
                 debug=False, background=False):
     from circus import get_arbiter
 
@@ -20,23 +20,22 @@ def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout',
     else:
         debug = ''
 
+    broker_cmd = python + ' -m powerhose.broker --logfile ' + logfile + debug
+    worker_cmd = (python + ' -m powerhose.worker ' + target + ' --logfile '+
+                  logfile + debug)
+
     watchers = [{'name': 'broker',
-                 'cmd': python,
-                 'args': '-m powerhose.broker --logfile ' + logfile + debug,
+                 'cmd': broker_cmd,
+                 'working_dir': working_dir,
+                 'shell': True,
                  },
                 {'name': 'workers',
-                 'cmd': python,
-                 'args': '-m powerhose.worker ' + target + '  --logfile '
-                 + logfile + debug,
-                 'numprocesses': numprocesses}
+                 'cmd': worker_cmd,
+                 'numprocesses': numprocesses,
+                 'working_dir': working_dir,
+                 'shell': True}
                 ]
 
-    logger.debug('Running with Circus.')
-    logger.debug('Commands: ')
-    logger.debug(python + ' -m powerhose.broker --logfile ' + logfile
-            + debug)
-    logger.debug(python + ' -m powerhose.worker ' + target + ' --logfile '
-            + logfile + debug)
     # XXX add more options
     return get_arbiter(watchers, background=background)
 

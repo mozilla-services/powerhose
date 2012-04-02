@@ -19,6 +19,7 @@ from powerhose.util import send, resolve_name
 class Worker(object):
 
     def __init__(self, backend, target, timeout=1.):
+        logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.timeout = timeout * 1000
         self.backend = backend
@@ -36,9 +37,10 @@ class Worker(object):
         self.ctx.destroy(0)
 
     def start(self):
+        logger.debug('Starting the loop')
+
         self.running = True
 
-        logger.debug('Starting the loop')
         while self.running:
             try:
                 socks = dict(self.poller.poll(self.poll_timeout))

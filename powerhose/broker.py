@@ -33,6 +33,8 @@ class Broker(object):
 
     """
     def __init__(self, frontend=_FRONTEND, backend=_BACKEND):
+        logger.debug('Initializing the broker.')
+
         for endpoint in (frontend, backend):
             if endpoint.startswith('ipc'):
                 register_ipc_file(endpoint)
@@ -57,10 +59,10 @@ class Broker(object):
     def start(self):
         """Starts the registration loop and then wait for some job.
         """
+        logger.debug('Starting the loop')
         if self.started:
             return
 
-        logger.debug('Starting the loop')
         self.started = True
         while self.started:
             try:
@@ -98,7 +100,7 @@ class Broker(object):
 
 
 def main(args=sys.argv):
-    parser = argparse.ArgumentParser(description='Run some watchers.')
+    parser = argparse.ArgumentParser(description='Powerhose broker.')
 
     parser.add_argument('--frontend', dest='frontend', default=_FRONTEND,
                         help="ZMQ socket to receive jobs.")
@@ -109,12 +111,14 @@ def main(args=sys.argv):
 
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
+
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to .")
 
     args = parser.parse_args()
 
     set_logger(args.debug, logfile=args.logfile)
+    logger.info('Starting the broker')
     broker = Broker(frontend=args.frontend, backend=args.backend)
     logger.info('Listening to incoming jobs at %s' % args.frontend)
     logger.info('Workers may register at %s' % args.backend)
