@@ -52,7 +52,7 @@ class Broker(object):
 
         # status
         self.started = False
-        self.poll_timeout = 0
+        self.poll_timeout = None
 
     def start(self):
         """Starts the registration loop and then wait for some job.

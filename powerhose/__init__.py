@@ -10,27 +10,33 @@ import argparse
 logger = logging.getLogger('powerhose')
 
 
-def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout'):
+def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout',
+                debug=False):
     from circus import get_arbiter
 
     python = sys.executable
+    if debug:
+        debug = ' --debug'
+    else:
+        debug = ''
 
     watchers = [{'name': 'broker',
                  'cmd': python,
-                 'args': '-m powerhose.broker --logfile ' + logfile,
+                 'args': '-m powerhose.broker --logfile ' + logfile + debug,
                  },
                 {'name': 'workers',
                  'cmd': python,
                  'args': '-m powerhose.worker ' + target + '  --logfile '
-                 + logfile,
+                 + logfile + debug,
                  'numprocesses': numprocesses}
                 ]
 
     logger.debug('Running with Circus.')
     logger.debug('Commands: ')
-    logger.debug(python + ' -m powerhose.broker --logfile ' + logfile)
+    logger.debug(python + ' -m powerhose.broker --logfile ' + logfile
+            + debug)
     logger.debug(python + ' -m powerhose.worker ' + target + ' --logfile '
-            + logfile)
+            + logfile + debug)
     return get_arbiter(watchers)
 
 
@@ -53,7 +59,8 @@ def main(args=sys.argv):
     sys.path.insert(0, os.getcwd())  # XXX
     resolve_name(args.target)  # check the callable
 
-    cluster = get_cluster(args.target, args.numprocesses, logfile=args.logfile)
+    cluster = get_cluster(args.target, args.numprocesses, logfile=args.logfile,
+                          debug=args.debug)
     try:
         cluster.start()
     except KeyboardInterrupt:

@@ -28,7 +28,7 @@ class Worker(object):
         self.running = False
         self.poller = zmq.Poller()
         self.poller.register(self._backend, zmq.POLLIN)
-        self.poll_timeout = 0
+        self.poll_timeout = None
 
     def stop(self):
         self.running = False

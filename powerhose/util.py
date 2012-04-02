@@ -60,6 +60,8 @@ def send(socket, msg, more=False, max_retries=3, retry_sleep=0.1):
             else:
                 raise
 
+    logger.debug('Sending failed')
+    logger.debug(msg)
     raise TimeoutError()
 
 
@@ -77,6 +79,7 @@ def recv(socket, max_retries=3, retry_sleep=0.1):
             else:
                 raise
 
+    logger.debug('Receiving failed')
     raise TimeoutError()
 
 
