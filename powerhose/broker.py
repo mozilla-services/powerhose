@@ -135,8 +135,9 @@ def main(args=sys.argv):
     logger.info('Starting the broker')
     broker = Broker(frontend=args.frontend, backend=args.backend,
                     heartbeat=args.heartbeat)
-    logger.info('Listening to incoming jobs at %s' % args.frontend)
-    logger.info('Workers may register at %s' % args.backend)
+    logger.info('Listening to incoming jobs at %r' % args.frontend)
+    logger.info('Workers may register at %r' % args.backend)
+    logger.info('The heartbeat socket is at %r' % args.heartbeat)
     try:
         broker.start()
     except KeyboardInterrupt:

@@ -115,6 +115,7 @@ def main(args=sys.argv):
     target = resolve_name(args.target)
 
     logger.info('Worker registers at %s' % args.backend)
+    logger.info('The heartbeat socket is at %r' % args.heartbeat)
     worker = Worker(args.backend, target=target)
 
     try:
