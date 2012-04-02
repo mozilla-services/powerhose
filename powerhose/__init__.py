@@ -11,7 +11,7 @@ logger = logging.getLogger('powerhose')
 
 
 def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout',
-                debug=False):
+                debug=False, background=False):
     from circus import get_arbiter
 
     python = sys.executable
@@ -37,7 +37,8 @@ def get_cluster(target, numprocesses=5, working_dir=None, logfile='stdout',
             + debug)
     logger.debug(python + ' -m powerhose.worker ' + target + ' --logfile '
             + logfile + debug)
-    return get_arbiter(watchers)
+    # XXX add more options
+    return get_arbiter(watchers, background=background)
 
 
 def main(args=sys.argv):
