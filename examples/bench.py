@@ -9,7 +9,7 @@ import sys
 import threading
 
 
-_KEY = binascii.b2a_hex(os.urandom(4096*3))[:4096*3]
+_KEY = binascii.b2a_hex(os.urandom(4096))[:4096]
 
 
 def _sign(data):
@@ -26,7 +26,7 @@ def sign(job):
 _SIZE = 400
 _THREADS = 4
 _ONE = _SIZE / _THREADS
-_PROC = 5
+_PROC = 10
 
 
 def timed(msg):
@@ -38,7 +38,7 @@ def timed(msg):
             try:
                 return func(*args, **kw)
             finally:
-                sys.stdout.write('%.2f s\n' % (time.time() - start))
+                sys.stdout.write('%.4f s\n' % (time.time() - start))
                 sys.stdout.flush()
         return __timed
     return _timed
@@ -64,7 +64,8 @@ def simple_3():
         t.join()
 
 
-@timed('%d calls via phose, %d threads' % (_SIZE, _THREADS))
+@timed('%d calls via phose, %d threads %d phose workers' % (_SIZE, _THREADS,
+    _PROC))
 def _phose3():
 
     def _t():
@@ -86,7 +87,7 @@ def _phose3():
 
 
 
-@timed('%d calls via phose.' % _SIZE)
+@timed('%d calls via phose. %d workers' % (_SIZE, _PROC))
 def _phose(client):
     for i in range(_SIZE):
         try:
@@ -95,7 +96,7 @@ def _phose(client):
             print 'error'
 
 
-@timed('%d calls via phose + gevent' % _SIZE)
+@timed('%d calls via phose + gevent. %d workers' % (_SIZE, _PROC))
 def _phose_gevent(client):
     for i in range(_SIZE):
         try:
@@ -104,7 +105,7 @@ def _phose_gevent(client):
             print 'error'
 
 
-@timed('%d calls via phose + gevent, %d threads' % (_SIZE, _THREADS))
+@timed('%d calls via phose + gevent, %d threads. %d workers' % (_SIZE, _THREADS, _PROC))
 def _phose_gevent_3():
     def _t():
         from powerhose.client import Client
@@ -189,8 +190,13 @@ def phose_gevent_3():
     finally:
         p.terminate()
 
+@timed('Single job')
+def single():
+    _sign('1')
+
 
 if __name__ == '__main__':
+    single()
     simple()
     simple_3()
     phose()
