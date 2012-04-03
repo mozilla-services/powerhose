@@ -9,7 +9,7 @@ from powerhose import logger
 
 class Client(object):
 
-    def __init__(self, frontend=_FRONTEND, timeout=.5):
+    def __init__(self, frontend=_FRONTEND, timeout=5.):
         self.ctx = zmq.Context()
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)

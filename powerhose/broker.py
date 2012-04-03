@@ -56,7 +56,7 @@ class Broker(object):
         self.poller.register(self._backend, zmq.POLLIN)
 
         # heartbeat
-        self.pong = Pong(heartbeat)
+        #self.pong = Pong(heartbeat)
 
         # status
         self.started = False
@@ -70,7 +70,7 @@ class Broker(object):
             return
 
         # running the heartbeat
-        self.pong.start()
+        #self.pong.start()
 
         self.started = True
         while self.started:
@@ -105,7 +105,7 @@ class Broker(object):
         """
         if not self.started:
             return
-        self.pong.stop()
+        #self.pong.stop()
         self.started = False
 
 

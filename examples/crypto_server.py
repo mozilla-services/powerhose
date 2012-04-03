@@ -10,6 +10,7 @@ import sys
 
 from powerhose import get_cluster
 from powerhose.client import Client
+import threading
 
 
 class RSA3248(object):
@@ -38,6 +39,12 @@ def phose():
     return client.execute(data)
 
 
+from gevent import monkey; monkey.patch_all()
+from gevent_zeromq import monkey_patch
+
+monkey_patch()
+
+
 client = Client()
 application = default_app()
 
@@ -52,5 +59,24 @@ if __name__ == '__main__':
     #finally#:
     #    #cluster.stop()
     #    pass
-    pass
+
+    import time
+
+    def _t():
+        client = Client()
+        for i in range(200):
+            client.execute(str(i))
+
+    threads = [threading.Thread(target=_t) for i in range(5)]
+
+    import time
+    start = time.time()
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
+    print time.time() - start
+
 

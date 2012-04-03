@@ -46,6 +46,8 @@ def send(socket, msg, more=False, max_retries=3, retry_sleep=0.1):
     retries = 0
     while retries < max_retries:
         try:
+            logger.debug('send')
+
             if more:
                 socket.send(msg, zmq.SNDMORE | zmq.NOBLOCK)
             else:
@@ -69,6 +71,7 @@ def recv(socket, max_retries=3, retry_sleep=0.1):
     retries = 0
     while retries < max_retries:
         try:
+            logger.debug('receive')
             return socket.recv(zmq.NOBLOCK)
         except zmq.ZMQError, e:
             logger.debug('Failed on recv()')
