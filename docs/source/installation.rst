@@ -3,12 +3,6 @@
 Installation
 ============
 
-.. note::
-
-   Consider using the https://github.com/tarekziade/gevent-zeromq
-   fork until it's merged into gevent-zeromq
-
-
 Use pip::
 
     $ pip install powerhose

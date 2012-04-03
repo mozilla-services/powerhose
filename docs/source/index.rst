@@ -11,19 +11,38 @@ Powerhose
 .. image:: images/medium-powerhose.png
    :align: right
 
-Powerhose is a single master / multiple worker ZeroMQ library, that can be
-used to push some work to specialized workers.
+**Powerhose turns your CPU-bound tasks into I/O-bound tasks so your applications
+are easier to scale.**
 
-ZeroMQ is mainly used as an IPC library, so the master and the workers can
-interact, but since ZeroMQ can use TCP as a transport, Powerhose can also
-work with distant workers.
+Powerhose is an implementation of the
+`Request-Reply Broker <http://zguide.zeromq.org/page:all#A-Request-Reply-Broker>`_
+pattern in ZMQ.
 
-Powerhose uses `Circus <http://circus.readthedocs.org>`_ to manage the life
-of workers.
+The two main parts are:
+
+- a broker that binds a socket to get some job (*"front"*) and a
+  socket for workers (*"back"*) to connect to the broker.
+
+- workers that connect to the "back" socket, receives jobs and
+  send back results.
+
+When a job comes in, the broker simply re-route it to its workers from
+the front to the back socket, then get back the result and go from the back
+to the front socket.
+
+Workers also ping the broker on a regular basis via a *"heartbeat"* socket
+and die in case the broker has been offline for too long.
+
+Powerhose uses `Circus <http://circus.readthedocs.org>`_ to manage the
+life of the broker and the workers, and provide high level APIs for your
+program.
+
+Workers can be written in Python but also in any language that has a
+ZeroMQ library.
 
 If you have CPU-Bound tasks that could be performed in a specialized C++
 program for example, Powerhose is a library you could use to ease your
-life
+life.
 
 If you are curious about why we wrote this library see :ref:`why`.
 
@@ -31,7 +50,7 @@ If you are curious about why we wrote this library see :ref:`why`.
 Example
 =======
 
-Here's a full example of library usage: we want to delegate some work
+Here's a full example of usage -- we want to delegate some work
 to a specialized worker.
 
 Let's create a function that just echoes back what was sent to it,
@@ -42,28 +61,23 @@ and save it in an :file:`example` module::
 
 
 This function takes a :class:`Job` instance that contains the data sent by
-Powerhose. It returns it immediatly.
+Powerhose. It returns its content immediately.
 
-Let's try this worker in a shell with `powerhose-worker`::
+Let's run our Powerhose cluster with the *powerhose* command, by simply
+pointing the :func:`echo` callable::
 
-    $ powerhose-worker example.echo
-    Worker registers at ipc:///tmp/powerhose-registration.ipc
-    Worker receives job at ipc:///tmp/worker-$WID.ipc
-    The master did not respond - quitting...
+    $ powerhose echo_worker.echo
+    [circus] Starting master on pid 51177
+    [circus] broker started
+    [circus] workers started
+    [circus] Arbiter now waiting for commands
 
-The program exits immediatly because there are no Powerhose Router running
-yet.
 
-Let's run one ::
+That's it !  By default one broker and 5 workers are launched, but you can
+run as many workers as you need, and even add more while the system is
+running.
 
-    $ powerhose-router
-    Listening to incoming jobs at ipc:///tmp/powerhose-routing.ipc
-    Workers may register at ipc:///tmp/powerhose-registration.ipc
-
-If the worker is launched again in another shell, it will register itself to
-the router.
-
-Now that both router and worker are alive, let's try it out in a Python
+Now that the system is up and running, let's try it out in a Python
 shell::
 
     >>> from powerhose.client import Client
@@ -74,47 +88,37 @@ shell::
 
 Congrats ! You have a Powerhose system up and running !
 
-
-Running several workers
-=======================
-
-The simplest way to run a Powerhose system is to use Circus. Let's say
-you want to run 5 workers of the previous example, and make sure
-they are always up and running.
-
-Create the following .ini file::
-
-    [circus]
-    check_delay = 5
-    endpoint = tcp://127.0.0.1:5555
-
-    [watcher:master]
-    cmd = powerhose-router
-    numprocesses = 1
-
-    [watcher:workers]
-    cmd = powerhose-worker
-    args = example.echo
-    numprocesses = 5
+To learn about all existing commands and their options, see :ref:`commands`.
 
 
-That's it ! Circus will make sure every process stays alive, and will also
-offer nice features like letting you add or remove workers live::
+Using Powerhose programmaticaly
+===============================
 
-    $ circusd circus.ini
-    [INFO] Starting master on pid 25978
-    [INFO] master started
-    [INFO] workers started
-    [INFO] Arbiter now waiting for commands
+The simplest way to run a Powerhose system is to use the command line as
+previously shown, but you can also do everything programmatically via
+the :func:`get_cluster` function.
 
-    $ circusctl list
-    master,workers
+Here's an example::
 
-    $ circusctl incr workers
-    6
+    from powerhose import get_cluster
+    from powerhose.client import Client
 
-    $ bin/circusctl incr workers
-    7
+
+    cluster = get_cluster('example.echo', background=True)
+    cluster.start()
+
+    client = Client()
+
+    for i in range(10):
+        print client.execute(str(i))
+
+    cluster.stop()
+
+
+Here, the cluster is launched programmatically in the background and the
+client uses it as before.
+
+To learn more about Powerhose APIs, see :ref:`library`.
 
 
 
@@ -125,8 +129,9 @@ More documentation
    :maxdepth: 2
 
    installation
+   commands
    library
-   protocol
+   examples
    why
 
 Contributions and Feedback
