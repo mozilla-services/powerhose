@@ -15,12 +15,12 @@ class TestHeartbeat(unittest.TestCase):
         def onbeatlost():
             lost.append('.')
 
-
         pong = Pong('ipc:///tmp/ping.ipc', timeout=0.1)
         pong.start()
         time.sleep(.2)
 
-        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat, onbeatlost=onbeatlost,
+        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat,
+                    onbeatlost=onbeatlost,
                     delay=0.1)
         ping.start()
 
@@ -30,7 +30,6 @@ class TestHeartbeat(unittest.TestCase):
         pong.stop()
         self.assertTrue(len(beats) > 10)
         self.assertEqual(len(lost),  0)
-
 
     def test_lost(self):
         beats = []
@@ -42,12 +41,12 @@ class TestHeartbeat(unittest.TestCase):
         def onbeatlost():
             lost.append('.')
 
-
         pong = Pong('ipc:///tmp/ping.ipc', timeout=0.1)
         pong.start()
         time.sleep(.2)
 
-        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat, onbeatlost=onbeatlost,
+        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat,
+                    onbeatlost=onbeatlost,
                     delay=0.1)
         ping.start()
 

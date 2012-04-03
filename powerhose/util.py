@@ -105,6 +105,7 @@ def set_logger(debug=False, name='powerhose', logfile='stdout'):
     ch.setFormatter(formatter)
     logger_.addHandler(ch)
 
+
 # taken from distutils2
 def resolve_name(name):
     """Resolve a name like ``module.object`` to an object and return it.

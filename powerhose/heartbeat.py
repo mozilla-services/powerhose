@@ -110,7 +110,6 @@ class Pong(threading.Thread):
             if msg != 'PING':       # wat ?
                 continue   # ah well
 
-
             send(self._endpoint, 'PONG')
             logger.debug('Ponged!')
 

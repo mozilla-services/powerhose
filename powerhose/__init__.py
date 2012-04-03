@@ -23,7 +23,7 @@ def get_cluster(target, numprocesses=5, working_dir='.', logfile='stdout',
         debug = ''
 
     broker_cmd = python + ' -m powerhose.broker --logfile ' + logfile + debug
-    worker_cmd = (python + ' -m powerhose.worker ' + target + ' --logfile '+
+    worker_cmd = (python + ' -m powerhose.worker ' + target + ' --logfile ' +
                   logfile + debug)
 
     watchers = [{'name': 'broker',

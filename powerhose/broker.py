@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Jobs runner.
 """
+import errno
 import time
 import sys
 import traceback
@@ -13,7 +14,7 @@ import zmq
 
 
 from powerhose import logger
-from powerhose.util import send, recv, set_logger, register_ipc_file
+from powerhose.util import set_logger, register_ipc_file
 from powerhose.heartbeat import Pong
 
 
@@ -54,9 +55,6 @@ class Broker(object):
         self._backend.bind(backend)
 
         # setting up the poller
-        #self.poller = zmq.Poller()
-        #self.poller.register(self._frontend, zmq.POLLIN)
-        #self.poller.register(self._backend, zmq.POLLIN)
         self.loop = ioloop.IOLoop()
         self._frontstream = zmqstream.ZMQStream(self._frontend, self.loop)
         self._frontstream.on_recv(self._handle_recv_front)
@@ -73,12 +71,26 @@ class Broker(object):
     def _handle_recv_front(self, msg):
         # front => back
         logger.debug('front -> back')
-        self._backstream.send_multipart(msg)
+        try:
+            self._backstream.send_multipart(msg)
+        except Exception, e:
+            # we don't want to die on error. we just log it
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            logger.error('\n'.join(exc))
 
     def _handle_recv_back(self, msg):
         # back => front
         logger.debug('front <- back')
-        self._frontstream.send_multipart(msg)
+        try:
+            self._frontstream.send_multipart(msg)
+        except Exception, e:
+            # we don't want to die on error. we just log it
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            logger.error('\n'.join(exc))
 
     def start(self):
         """Starts the registration loop and then wait for some job.
@@ -107,32 +119,6 @@ class Broker(object):
                     raise
             else:
                 break
-
-            #try:
-            #    socks = dict(self.poller.poll(self.poll_timeout))
-            #except zmq.ZMQError, e:
-            #    logger.debug("The poll failed")
-            #    logger.debug(str(e))
-            #    break
-
-            #try:
-            #    if socks.get(self._frontend) == zmq.POLLIN:
-            #        logger.debug('front -> back')
-            #        message = recv(self._frontend)
-            #        more = self._frontend.getsockopt(zmq.RCVMORE)
-            #        send(self._backend, message, more)#
-
-            #    if socks.get(self._backend) == zmq.POLLIN:
-            #        logger.debug('front <- back')
-            #        message = recv(self._backend)
-            #        more = self._backend.getsockopt(zmq.RCVMORE)
-            #        send(self._frontend, message, more)
-            #except Exception, e:
-            #    # we don't want to die on error. we just log it
-            #    exc_type, exc_value, exc_traceback = sys.exc_info()
-            #    exc = traceback.format_tb(exc_traceback)
-            #    exc.insert(0, str(e))
-            #    logger.error('\n'.join(exc))
 
     def stop(self):
         """Stops the registration loop.
