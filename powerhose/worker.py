@@ -21,7 +21,7 @@ class Worker(object):
 
     def __init__(self, backend, target, hearbeat=_HEARTBEAT, timeout=1.):
         logger.debug('Initializing the worker.')
-        self.ctx = zmq.Context()
+        self.ctx = zmq.Context(io_threads=2)
         self.timeout = timeout * 1000
         self.backend = backend
         self._backend = self.ctx.socket(zmq.REP)
@@ -30,7 +30,7 @@ class Worker(object):
         self.running = False
         self.poller = zmq.Poller()
         self.poller.register(self._backend, zmq.POLLIN)
-        #self.ping = Ping(hearbeat, onbeatlost=self.lost)
+        self.ping = Ping(hearbeat, onbeatlost=self.lost)
 
     def lost(self):
         logger.info('Master lost ! Quitting..')
@@ -39,7 +39,7 @@ class Worker(object):
 
     def stop(self):
         logger.debug('Stopping the worker')
-        #self.ping.stop()
+        self.ping.stop()
         self.running = False
         time.sleep(.1)
         self.ctx.destroy(0)
@@ -49,7 +49,7 @@ class Worker(object):
         logger.debug('Starting the worker loop')
 
         # running the pinger
-        #self.ping.start()
+        self.ping.start()
         self.running = True
 
         while self.running:

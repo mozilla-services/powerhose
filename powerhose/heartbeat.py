@@ -78,7 +78,7 @@ class Pong(threading.Thread):
     def __init__(self, endpoint, timeout=5.):
         threading.Thread.__init__(self)
         self.daemon = True
-        self.context = zmq.Context()
+        self.context = zmq.Context(io_threads=2)
         if endpoint.startswith('ipc:'):
             register_ipc_file(endpoint)
         self._endpoint = self.context.socket(zmq.REP)
