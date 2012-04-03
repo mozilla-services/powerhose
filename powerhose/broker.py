@@ -4,10 +4,13 @@
 """ Jobs runner.
 """
 import time
-import zmq
 import sys
 import traceback
 import argparse
+
+from zmq.eventloop import ioloop, zmqstream
+import zmq
+
 
 from powerhose import logger
 from powerhose.util import send, recv, set_logger, register_ipc_file
@@ -51,9 +54,14 @@ class Broker(object):
         self._backend.bind(backend)
 
         # setting up the poller
-        self.poller = zmq.Poller()
-        self.poller.register(self._frontend, zmq.POLLIN)
-        self.poller.register(self._backend, zmq.POLLIN)
+        #self.poller = zmq.Poller()
+        #self.poller.register(self._frontend, zmq.POLLIN)
+        #self.poller.register(self._backend, zmq.POLLIN)
+        self.loop = ioloop.IOLoop()
+        self._frontstream = zmqstream.ZMQStream(self._frontend, self.loop)
+        self._frontstream.on_recv(self._handle_recv_front)
+        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
+        self._backstream.on_recv(self._handle_recv_back)
 
         # heartbeat
         self.pong = Pong(heartbeat)
@@ -61,6 +69,16 @@ class Broker(object):
         # status
         self.started = False
         self.poll_timeout = None
+
+    def _handle_recv_front(self, msg):
+        # front => back
+        logger.debug('front -> back')
+        self._backstream.send_multipart(msg)
+
+    def _handle_recv_back(self, msg):
+        # back => front
+        logger.debug('front <- back')
+        self._frontstream.send_multipart(msg)
 
     def start(self):
         """Starts the registration loop and then wait for some job.
@@ -75,36 +93,53 @@ class Broker(object):
         self.started = True
         while self.started:
             try:
-                socks = dict(self.poller.poll(self.poll_timeout))
-            except zmq.ZMQError, e:
-                logger.debug("The poll failed")
+                self.loop.start()
+            except zmq.ZMQError as e:
                 logger.debug(str(e))
+
+                if e.errno == errno.EINTR:
+                    continue
+                elif e.errno == zmq.ETERM:
+                    break
+                else:
+                    logger.debug("got an unexpected error %s (%s)", str(e),
+                                 e.errno)
+                    raise
+            else:
                 break
 
-            try:
-                if socks.get(self._frontend) == zmq.POLLIN:
-                    logger.debug('front -> back')
-                    message = recv(self._frontend)
-                    more = self._frontend.getsockopt(zmq.RCVMORE)
-                    send(self._backend, message, more)
+            #try:
+            #    socks = dict(self.poller.poll(self.poll_timeout))
+            #except zmq.ZMQError, e:
+            #    logger.debug("The poll failed")
+            #    logger.debug(str(e))
+            #    break
 
-                if socks.get(self._backend) == zmq.POLLIN:
-                    logger.debug('front <- back')
-                    message = recv(self._backend)
-                    more = self._backend.getsockopt(zmq.RCVMORE)
-                    send(self._frontend, message, more)
-            except Exception, e:
-                # we don't want to die on error. we just log it
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                exc = traceback.format_tb(exc_traceback)
-                exc.insert(0, str(e))
-                logger.error('\n'.join(exc))
+            #try:
+            #    if socks.get(self._frontend) == zmq.POLLIN:
+            #        logger.debug('front -> back')
+            #        message = recv(self._frontend)
+            #        more = self._frontend.getsockopt(zmq.RCVMORE)
+            #        send(self._backend, message, more)#
+
+            #    if socks.get(self._backend) == zmq.POLLIN:
+            #        logger.debug('front <- back')
+            #        message = recv(self._backend)
+            #        more = self._backend.getsockopt(zmq.RCVMORE)
+            #        send(self._frontend, message, more)
+            #except Exception, e:
+            #    # we don't want to die on error. we just log it
+            #    exc_type, exc_value, exc_traceback = sys.exc_info()
+            #    exc = traceback.format_tb(exc_traceback)
+            #    exc.insert(0, str(e))
+            #    logger.error('\n'.join(exc))
 
     def stop(self):
         """Stops the registration loop.
         """
         if not self.started:
             return
+        self.loop.stop()
         self.pong.stop()
         self.started = False
 

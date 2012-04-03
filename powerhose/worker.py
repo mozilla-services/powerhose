@@ -16,6 +16,9 @@ from powerhose.job import Job
 from powerhose.util import send, resolve_name
 from powerhose.heartbeat import Ping
 
+from zmq.eventloop import ioloop, zmqstream
+
+
 
 class Worker(object):
 
@@ -28,18 +31,41 @@ class Worker(object):
         self._backend.connect(self.backend)
         self.target = target
         self.running = False
-        self.poller = zmq.Poller()
-        self.poller.register(self._backend, zmq.POLLIN)
+        #self.poller = zmq.Poller()
+        #self.poller.register(self._backend, zmq.POLLIN)
+        self.loop = ioloop.IOLoop()
+        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
+        self._backstream.on_recv(self._handle_recv_back)
         self.ping = Ping(hearbeat, onbeatlost=self.lost)
+
+    def _handle_recv_back(self, msg):
+        # back => front
+        logger.debug('front <- back')
+
+        # do the job and send the result
+        start = time.time()
+        try:
+            res = self.target(Job.load_from_string(msg[0]))
+        except Exception, e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            res = '\n'.join(exc)
+            logger.error(res)
+            logger.debug('%.6f' % (time.time() - start))
+
+        self._backstream.send(res)
 
     def lost(self):
         logger.info('Master lost ! Quitting..')
         self.running = False
+        self.loop.stop()
         return True
 
     def stop(self):
         logger.debug('Stopping the worker')
         self.ping.stop()
+        self.loop.stop()
         self.running = False
         time.sleep(.1)
         self.ctx.destroy(0)
@@ -54,38 +80,55 @@ class Worker(object):
 
         while self.running:
             try:
-                socks = dict(self.poller.poll(self.timeout))
-            except zmq.ZMQError, e:
-                logger.debug("The worker poll failed")
+                self.loop.start()
+            except zmq.ZMQError as e:
                 logger.debug(str(e))
+
+                if e.errno == errno.EINTR:
+                    continue
+                elif e.errno == zmq.ETERM:
+                    break
+                else:
+                    logger.debug("got an unexpected error %s (%s)", str(e),
+                                 e.errno)
+                    raise
+            else:
                 break
 
-            try:
-                if socks.get(self._backend) == zmq.POLLIN:
 
-                    msg = unserialize(self._backend.recv())
+            #try:
+            #    socks = dict(self.poller.poll(self.timeout))
+            #except zmq.ZMQError, e:
+            #    logger.debug("The worker poll failed")
+            #    logger.debug(str(e))
+            #    break
 
-                    # do the job and send the result
-                    start = time.time()
-                    try:
-                        res = self.target(Job.load_from_string(msg[0]))
-                    except Exception, e:
-                        # XXX log the error
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        exc = traceback.format_tb(exc_traceback)
-                        exc.insert(0, str(e))
-                        res = '\n'.join(exc)
-                        logger.error(res)
+            #try:
+            #    if socks.get(self._backend) == zmq.POLLIN:
 
-                    logger.debug('%.6f' % (time.time() - start))
+            #       msg = unserialize(self._backend.recv())
 
-                    send(self._backend, res)
-            except Exception, e:
-                # we don't want to die on socket error. we just log them
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                exc = traceback.format_tb(exc_traceback)
-                exc.insert(0, str(e))
-                logger.error('\n'.join(exc))
+            #        # do the job and send the result
+            #        start = time.time()
+            #        try:
+            #            res = self.target(Job.load_from_string(msg[0]))
+            #        except Exception, e:
+            #            # XXX log the error
+            #            exc_type, exc_value, exc_traceback = sys.exc_info()
+            #            exc = traceback.format_tb(exc_traceback)
+            #            exc.insert(0, str(e))
+            #            res = '\n'.join(exc)
+            #            logger.error(res)
+
+            #        logger.debug('%.6f' % (time.time() - start))
+
+            #       send(self._backend, res)
+            #except Exception, e:
+            #    # we don't want to die on socket error. we just log them
+            #    exc_type, exc_value, exc_traceback = sys.exc_info()
+            #    exc = traceback.format_tb(exc_traceback)
+            #    exc.insert(0, str(e))
+            #    logger.error('\n'.join(exc))
 
         logger.debug('Worker loop over')
 

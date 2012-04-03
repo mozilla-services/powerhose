@@ -14,7 +14,7 @@ print 'Running 100 echo'
 
 start = time.time()
 
-for i in range(100):
+for i in range(2000):
     data = str(random.randint(1, 1000))
     job = Job(data)
     res = client.execute(job)

@@ -9,12 +9,12 @@ import sys
 import threading
 
 
-_KEY = binascii.b2a_hex(os.urandom(4096))[:4096]
+_KEY = binascii.b2a_hex(os.urandom(4096*3))[:4096*3]
 
 
 def _sign(data):
     seed = hmac.new(_KEY, data).hexdigest()
-    for i in range(600):
+    for i in range(400):
         seed = hmac.new(_KEY, seed).hexdigest()
     return 'OK'
 
@@ -23,10 +23,10 @@ def sign(job):
     return _sign(job.data)
 
 
-_SIZE = 800
+_SIZE = 400
 _THREADS = 4
 _ONE = _SIZE / _THREADS
-_PROC = 4
+_PROC = 5
 
 
 def timed(msg):
@@ -149,7 +149,7 @@ def phose_3():
 def _run_cluster():
     from powerhose import get_cluster
     from powerhose.client import Client
-    cluster = get_cluster('bench.sign',
+    cluster = get_cluster('bench.sign', debug=False,
                           numprocesses=_PROC,
                           logfile='/tmp/phose')
     try:
