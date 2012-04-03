@@ -12,6 +12,8 @@ logger = logging.getLogger('powerhose')
 
 def get_cluster(target, numprocesses=5, working_dir='.', logfile='stdout',
                 debug=False, background=False):
+    """Runs a Powerhose cluster.
+    """
     from circus import get_arbiter
 
     python = sys.executable

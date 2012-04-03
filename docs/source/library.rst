@@ -13,20 +13,35 @@ Library
     required to introspect the code. (typically: pyzmq)
 
 
-Powerhose is organized into a simple hierarchy of classes:
+Powerhose is organized into a simple hierarchy of classes and a few functions:
+
+- :func:`get_cluster` -- a function that create a whole cluster.
 
 - :class:`Job` -- A class that holds a job to be performed.
 
-- :class:`Workers` -- A queue of workers. A worker is just a ZMQ socket with
-  and *identity* attribute.
+- :class:`Broker` -- A class that pass the jobs it receives to workers.
 
-- :class:`WorkerRegistration` -- A thread that opens a registration channel,
-  and register workers into the :class:`Workers` queue.
+- :class:`Worker` -- A class that connects to a broker and pass jobs it receives
+  to a Python callable.
 
-- :class:`JobRunner` -- The class that orchestrates everything. It creates
-  a :class:`Workers` queue, starts a :class:`WorkerRegistration` thread, and
-  provide an :func:`execute` function to pass :class:`Job` instances to
-  workers.
+- :class:`Ping` and :class:`Pong` -- implements q heartbeat. The :class:`Broker` class
+  runs a :class:`Pong` instance and each worker a  :class:`Ping` instance.
+
+- :class:`Client` -- A class that connects to a broker and let you run jobs against
+  it.
+
+
+
+get_cluster
+===========
+
+The :func:`get_cluster` function creates a :class:`Broker` and several
+:class:`Worker` instance. It can be run in the background for conveniency.
+
+
+.. autofunction:: powerhose.get_cluster
+
+
 
 Job
 ===
@@ -48,39 +63,35 @@ Example::
     '4*2'
 
 
-JobRunner
-=========
+Broker
+======
 
-.. autoclass:: powerhose.jobrunner.JobRunner
-   :members: execute,start,stop
-
-
-Example::
-
-   >>> from powerhose.job import Job
-    >>> job = Job('4*2')
-    >>> from powerhose.jobrunner import JobRunner
-    >>> runner = JobRunner()
-    >>> runner.start()              # starts the registration
-    >>> runner.execute(job)
-    Traceback (most recent call last):
-    ...
-    raise TimeoutError("Could not get a worker")
+.. autoclass:: powerhose.broker.Broker
+   :members: start
 
 
-In this example, since we did not run any worker, :func:`execute` fails
-after 5 seconds (default timeout).
+Worker
+======
 
-
-Workers
-=======
-
-.. autoclass:: powerhose.workermgr.Workers
+.. autoclass:: powerhose.worker.Worker
    :members: get_context,acquire,release,delete,add
 
-WorkerRegistration
-==================
+Heartbeat
+=========
 
-.. autoclass:: powerhose.workermgr.WorkerRegistration
+.. autoclass:: powerhose.heartbeat.Ping
    :members: stop,start
+
+.. autoclass:: powerhose.heartbeat.Pong
+   :members: stop,start
+
+
+Client
+======
+
+.. autoclass:: powerhose.client.Client
+   :members: execute
+
+
+
 

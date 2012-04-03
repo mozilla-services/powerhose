@@ -19,6 +19,7 @@ class Client(object):
         self.timeout = timeout * 1000
 
     def execute(self, job):
+        """Runs the job"""
         if isinstance(job, str):
             job = Job(job)
 
