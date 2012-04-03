@@ -22,7 +22,7 @@ from zmq.eventloop import ioloop, zmqstream
 
 class Worker(object):
 
-    def __init__(self, backend, target, hearbeat=_HEARTBEAT, timeout=1.):
+    def __init__(self, backend, target, heartbeat=_HEARTBEAT, timeout=1.):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context(io_threads=2)
         self.timeout = timeout * 1000
@@ -36,7 +36,7 @@ class Worker(object):
         self.loop = ioloop.IOLoop()
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
-        self.ping = Ping(hearbeat, onbeatlost=self.lost)
+        self.ping = Ping(heartbeat, onbeatlost=self.lost)
 
     def _handle_recv_back(self, msg):
         # back => front
@@ -159,7 +159,7 @@ def main(args=sys.argv):
 
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
-    worker = Worker(args.backend, target=target)
+    worker = Worker(args.backend, target=target, heartbeat=args.heartbeat)
 
     try:
         worker.start()

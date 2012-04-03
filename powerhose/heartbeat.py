@@ -93,7 +93,7 @@ class Pong(threading.Thread):
 
         while self.running:
             try:
-                events = dict(self.poller.poll(self.timeout))
+                events = dict(self.poller.poll(self.timeout * 1000))
             except zmq.ZMQError, e:
                 logger.debug("The poll failed")
                 logger.debug(str(e))
