@@ -39,7 +39,6 @@ class Worker(object):
 
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context(io_threads=2)
-        self.timeout = timeout * 1000
         self.backend = backend
         self._backend = self.ctx.socket(zmq.REP)
         self._backend.connect(self.backend)
