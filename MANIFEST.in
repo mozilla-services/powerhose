@@ -1,3 +1,5 @@
 include *.rst
 include *.txt
 include MANIFEST.in
+recursive-include examples *.py
+recursive-include examples *.ini
