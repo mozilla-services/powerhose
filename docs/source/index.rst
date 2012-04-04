@@ -11,8 +11,8 @@ Powerhose
 .. image:: images/medium-powerhose.png
    :align: right
 
-**Powerhose turns your CPU-bound tasks into I/O-bound tasks so your applications
-are easier to scale.**
+**Powerhose turns your CPU-bound tasks into I/O-bound tasks so your Python
+applications are easier to scale.**
 
 Powerhose is an implementation of the
 `Request-Reply Broker <http://zguide.zeromq.org/page:all#A-Request-Reply-Broker>`_
