@@ -21,8 +21,22 @@ from zmq.eventloop import ioloop, zmqstream
 
 
 class Worker(object):
+    """Class that links a callable to a broker.
 
-    def __init__(self, backend, target, heartbeat=_HEARTBEAT, timeout=1.):
+    Options:
+
+    - **backend**: The ZMQ socket to connect to the broker.
+    - **target**: The Python callable that will be called when the broker
+      send a job.
+    - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
+      sure it's still alive.
+    - **ping_delay**: the delay in seconds betweem two pings.
+    - **ping_retries**: the number of attempts to ping the broker before
+      quitting.
+    """
+    def __init__(self, backend, target, heartbeat=_HEARTBEAT,
+                 ping_delay=1., ping_retries=3):
+
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context(io_threads=2)
         self.timeout = timeout * 1000
@@ -31,12 +45,11 @@ class Worker(object):
         self._backend.connect(self.backend)
         self.target = target
         self.running = False
-        #self.poller = zmq.Poller()
-        #self.poller.register(self._backend, zmq.POLLIN)
         self.loop = ioloop.IOLoop()
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
-        self.ping = Ping(heartbeat, onbeatlost=self.lost)
+        self.ping = Ping(heartbeat, onbeatlost=self.lost, delay=ping_delay,
+                         retries=ping_retries)
 
     def _handle_recv_back(self, msg):
         # back => front
@@ -63,6 +76,8 @@ class Worker(object):
         return True
 
     def stop(self):
+        """Stops the worker.
+        """
         logger.debug('Stopping the worker')
         self.ping.stop()
         self.loop.stop()
@@ -72,6 +87,8 @@ class Worker(object):
         logger.debug('Worker is stopped')
 
     def start(self):
+        """Starts the worker
+        """
         logger.debug('Starting the worker loop')
 
         # running the pinger

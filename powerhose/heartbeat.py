@@ -8,7 +8,19 @@ from powerhose import logger
 
 
 class Ping(threading.Thread):
+    """Class that implements a ZMQ heartbeat client.
 
+    Options:
+
+    - **endpoint** : The ZMQ socket to call.
+    - **warmup_delay** : The delay before starting to Ping. Defaults to 5s.
+    - **delay**: The delay between two pings. Defaults to 1s.
+    - **retries**: The number of attempts to ping. Defaults to 3.
+    - **onbeatlost**: a callable that will be called when a ping failed.
+      If the callable returns **True**, the ping quits. Defaults to None.
+    - **onbeat**: a callable that will be called when a ping succeeds.
+      Defaults to None.
+    """
     def __init__(self, endpoint, warmup_delay=.5, delay=1., retries=3,
                  onbeatlost=None, onbeat=None):
         threading.Thread.__init__(self)
@@ -25,9 +37,12 @@ class Ping(threading.Thread):
         self.onbeat = onbeat
         self.warmup_delay = warmup_delay
 
+    def start(self):
+        """Starts the pinger"""
+        threading.Thread.start(self)
+
     def run(self):
         time.sleep(self.warmup_delay)
-
         self.running = True
 
         while self.running:
@@ -68,6 +83,7 @@ class Ping(threading.Thread):
         logger.debug('Ping loop over')
 
     def stop(self):
+        """Stops the Pinger"""
         logger.debug('Stopping the pinger')
         self.running = False
         self.context.destroy(0)
@@ -75,6 +91,13 @@ class Ping(threading.Thread):
 
 
 class Pong(threading.Thread):
+    """Class that implements a ZMQ heartbeat server.
+
+    Options:
+
+    - **endpoint** : The ZMQ socket to call.
+    - **timeout** : Timeout between two polls.
+    """
     def __init__(self, endpoint, timeout=5.):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -87,6 +110,10 @@ class Pong(threading.Thread):
         self.poller.register(self._endpoint, zmq.POLLIN)
         self.running = False
         self.timeout = timeout
+
+    def start(self):
+        """Starts the Pong service"""
+        threading.Thread.start(self)
 
     def run(self):
         self.running = True
@@ -114,6 +141,7 @@ class Pong(threading.Thread):
             logger.debug('Ponged!')
 
     def stop(self):
+        """Stops the Pong service"""
         self.running = False
         time.sleep(self.timeout)
         self.context.destroy(0)

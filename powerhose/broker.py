@@ -37,6 +37,11 @@ def timed(func):
 class Broker(object):
     """Class that route jobs to workers.
 
+    Options:
+
+    - **frontend**: the ZMQ socket to receive jobs.
+    - **backend**: the ZMQ socket to communicate with workers.
+    - **heartbeat**: the ZMQ socket to receive heartbeat requests/
     """
     def __init__(self, frontend=_FRONTEND, backend=_BACKEND,
                  heartbeat=_HEARTBEAT):
@@ -93,7 +98,7 @@ class Broker(object):
             logger.error('\n'.join(exc))
 
     def start(self):
-        """Starts the registration loop and then wait for some job.
+        """Starts the broker.
         """
         logger.debug('Starting the loop')
         if self.started:
@@ -121,7 +126,7 @@ class Broker(object):
                 break
 
     def stop(self):
-        """Stops the registration loop.
+        """Stops the broker.
         """
         if not self.started:
             return

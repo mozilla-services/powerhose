@@ -26,7 +26,7 @@ The two main parts are:
 - workers that connect to the "back" socket, receives jobs and
   send back results.
 
-When a job comes in, the broker simply re-route it to its workers from
+When a job comes in, the broker simply re-routes it to its workers from
 the front to the back socket, then get back the result and go from the back
 to the front socket.
 
@@ -43,6 +43,20 @@ ZeroMQ library.
 If you have CPU-Bound tasks that could be performed in a specialized C++
 program for example, Powerhose is a library you could use to ease your
 life.
+
+.. note::
+
+   Before using Powerhose, ask yourself if you really need it.
+
+   The overhead of the data exchange can be quite important, so unless
+   your job is a CPU-bound task that takes more than 20 ms to perform,
+   there are high chances using Powerhose will not speed it up.
+
+   There's a :file:`bench.py` module in the examples you can change
+   to make some tests with your code. It will compare the speed with
+   and without Powerhose in a multi-threaded environment so you can
+   see if you get any benefit.
+
 
 If you are curious about why we wrote this library see :ref:`why`.
 
@@ -89,6 +103,35 @@ shell::
 Congrats ! You have a Powerhose system up and running !
 
 To learn about all existing commands and their options, see :ref:`commands`.
+
+
+Running Powerhose with Circus
+=============================
+
+Of course, the goal is to keep the broker and its workers up and running
+on a system. You can use Daemontools, Supervisord or Circus.
+
+Circus is our preferred system. A Circus config can look like this::
+
+    [circus]
+    check_delay = 5
+    endpoint = tcp://127.0.0.1:5555
+
+    [watcher:master]
+    cmd = powerhose-broker
+    args = --frontend ipc:///tmp/front --backend ipc:///tmp/backend --heartbeat ipc:///tmp/heartbeat
+    warmup_delay = 0
+    numprocesses = 1
+
+    [watcher:workers]
+    cmd = powerhose-worker
+    args = --backend ipc:///tmp/backend --heartbeat ipc:///tmp/heartbeat echo_worker.echo
+    warmup_delay = 0
+    numprocesses = 5
+
+
+This file can then be launched via **circusd**. See the Circus documentation
+for details on this.
 
 
 Using Powerhose programmaticaly

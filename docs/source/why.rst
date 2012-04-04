@@ -58,7 +58,7 @@ We chose ZeroMQ because:
 
 Powerhose allows us to:
 
-- deploy dynamically as many workers as we want, event on other
+- deploy dynamically as many workers as we want, even on other
   servers when it makes sense.
 
 - write workers in C++

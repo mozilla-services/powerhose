@@ -42,7 +42,6 @@ The :func:`get_cluster` function creates a :class:`Broker` and several
 .. autofunction:: powerhose.get_cluster
 
 
-
 Job
 ===
 
@@ -67,14 +66,15 @@ Broker
 ======
 
 .. autoclass:: powerhose.broker.Broker
-   :members: start
+   :members: start,stop
 
 
 Worker
 ======
 
 .. autoclass:: powerhose.worker.Worker
-   :members: get_context,acquire,release,delete,add
+   :members: start,stop
+
 
 Heartbeat
 =========
