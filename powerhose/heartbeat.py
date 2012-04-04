@@ -55,6 +55,10 @@ class Ping(threading.Thread):
                     if self.onbeatlost():
                         self.running = False
                 continue
+            except zmq.ZMQError:
+                if self._endpoint.closed and not self.running:
+                    return
+                raise
 
             # waiting for the PONG
             try:
@@ -65,6 +69,10 @@ class Ping(threading.Thread):
                     if self.onbeatlost():
                         self.running = False
                 continue
+            except zmq.ZMQError:
+                if self._endpoint.closed and not self.running:
+                    return
+                raise
 
             if res != 'PONG':       # wat ?
                 if self.onbeatlost is not None:
