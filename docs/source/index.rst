@@ -101,7 +101,7 @@ Powerhose. It returns its content immediately.
 Let's run our Powerhose cluster with the *powerhose* command, by simply
 pointing the :func:`echo` callable::
 
-    $ powerhose echo_worker.echo
+    $ powerhose example.echo
     [circus] Starting master on pid 51177
     [circus] broker started
     [circus] workers started
