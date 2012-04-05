@@ -103,5 +103,8 @@ Client
    :members: execute
 
 
+Client Pool
+===========
 
-
+.. autoclass:: powerhose.client.Pool
+   :members: execute
