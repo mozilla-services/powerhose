@@ -75,7 +75,6 @@ class Stethoscope(threading.Thread):
 
         logger.debug('Ping loop over')
 
-
     def stop(self):
         """Stops the Pinger"""
         #logger.debug('Stopping the Pinger')
@@ -95,8 +94,6 @@ class Heartbeat(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
         self.context = zmq.Context()
-        if endpoint.startswith('ipc:'):
-            register_ipc_file(endpoint)
         self.endpoint = endpoint
         self.running = False
         self.interval = interval
