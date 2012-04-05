@@ -1,4 +1,1 @@
-gevent
-pyzmq
-gevent_zmq
-circus
+sphinxcontrib-blockdiag

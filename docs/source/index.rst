@@ -18,17 +18,35 @@ Powerhose is an implementation of the
 `Request-Reply Broker <http://zguide.zeromq.org/page:all#A-Request-Reply-Broker>`_
 pattern in ZMQ.
 
-The two main parts are:
+.. blockdiag::
 
-- a broker that binds a socket to get some job (*"front"*) and a
-  socket for workers (*"back"*) to connect to the broker.
+   diagram {
+     default_fontsize = 20;
 
-- workers that connect to the "back" socket, receives jobs and
-  send back results.
+     Client [color = "#FEF1E1", numbered=1];
+     Broker [color = "#6495ED", numbered=2];
+     Worker1 [label = "Worker 1", color = "#FF7F50"];
+     Worker2 [shape="dots"];
+     Worker3 [label = "Worker N", color = "#FF7F50", numbered=3];
+     Client <-> Broker [label="front"];
+     Broker <-> Worker2 [style="none"];
+     Broker <-> Worker1, Worker2, Worker3 [label="back"];
+   }
 
-When a job comes in, the broker simply re-routes it to its workers from
-the front to the back socket, then get back the result and go from the back
-to the front socket.
+
+The three main parts are:
+
+1. a client that connects to a broker to send some jobs.
+
+2. a broker that binds a socket to get some job (*"front"*) from clients,
+   and another socket for workers (*"back"*) to connect.
+
+3. workers that connect to the "back" socket of the broker, receives jobs
+   and end back results.
+
+
+When client sends a job, the broker simply re-routes it to one of its
+workers, then gets back the result and send it back to the client.
 
 Workers also ping the broker on a regular basis via a *"heartbeat"* socket
 and die in case the broker has been offline for too long.
