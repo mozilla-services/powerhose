@@ -10,7 +10,7 @@ from gevent import monkey
 from gevent_zeromq import monkey_patch
 
 
-from powerhose.client import Client
+from powerhose.client import Pool
 
 
 monkey.patch_all()
@@ -30,13 +30,7 @@ class RSA3248(object):
 crypto = RSA3248()
 
 clients = {}
-
-def get_client():
-    id = thread.get_ident()
-    if id not in clients:
-        clients[id] = Client()
-    return clients[id]
-
+_cl = Pool()
 
 def sign(job):
     crypto.sign(job.data)
@@ -53,7 +47,7 @@ def index():
 @route('/phose', method='POST')
 def phose():
     data = request.body.read()
-    return get_client().execute(data)
+    return _cl.execute(data)
 
 
 
