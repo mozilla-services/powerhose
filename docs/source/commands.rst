@@ -68,8 +68,9 @@ Runs one broker and several workers by using the two previous commands.
 ::
 
     $ powerhose --help
-    usage: powerhose [-h] [--debug] [--numprocesses NUMPROCESSES]
-                    [--logfile LOGFILE]
+    usage: powerhose [-h] [--frontend FRONTEND] [--backend BACKEND]
+                    [--heartbeat HEARTBEAT] [--debug]
+                    [--numprocesses NUMPROCESSES] [--logfile LOGFILE]
                     target
 
     Run a Powerhose cluster.
@@ -79,8 +80,11 @@ Runs one broker and several workers by using the two previous commands.
 
     optional arguments:
     -h, --help            show this help message and exit
+    --frontend FRONTEND   ZMQ socket to receive jobs.
+    --backend BACKEND     ZMQ socket for workers.
+    --heartbeat HEARTBEAT
+                            ZMQ socket for the heartbeat.
     --debug               Debug mode
     --numprocesses NUMPROCESSES
                             Number of processes to run.
-    --logfile LOGFILE     File to log in to
-
+    --logfile LOGFILE     File to log in to .

@@ -9,10 +9,14 @@ import logging
 import logging.handlers
 import sys
 
-from powerhose import logger
 from powerhose.exc import TimeoutError
 
+
 _SEP = '*****'
+DEFAULT_FRONTEND = "ipc:///tmp/powerhose-front.ipc"
+DEFAULT_BACKEND = "ipc:///tmp/powerhose-back.ipc"
+DEFAULT_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
+logger = logging.getLogger('powerhose')
 
 
 # will do better later

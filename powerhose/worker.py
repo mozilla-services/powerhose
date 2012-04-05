@@ -10,9 +10,8 @@ import argparse
 
 import zmq
 
-from powerhose.broker import _BACKEND, _HEARTBEAT
-from powerhose.util import set_logger
-from powerhose import logger
+from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
+                            DEFAULT_HEARTBEAT)
 from powerhose.job import Job
 from powerhose.util import resolve_name
 from powerhose.heartbeat import Ping
@@ -25,18 +24,17 @@ class Worker(object):
 
     Options:
 
-    - **backend**: The ZMQ socket to connect to the broker.
     - **target**: The Python callable that will be called when the broker
       send a job.
+    - **backend**: The ZMQ socket to connect to the broker.
     - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
       sure it's still alive.
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
     """
-    def __init__(self, backend, target, heartbeat=_HEARTBEAT,
-                 ping_delay=1., ping_retries=3):
-
+    def __init__(self, target, backend=DEFAULT_BACKEND,
+                 heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context(io_threads=2)
         self.backend = backend
@@ -118,7 +116,8 @@ def main(args=sys.argv):
 
     parser = argparse.ArgumentParser(description='Run some watchers.')
 
-    parser.add_argument('--backend', dest='backend', default=_BACKEND,
+    parser.add_argument('--backend', dest='backend',
+                        default=DEFAULT_BACKEND,
                         help="ZMQ socket to the broker.")
 
     parser.add_argument('target', help="Fully qualified name of the callable.")
@@ -130,7 +129,7 @@ def main(args=sys.argv):
                         help="File to log in to .")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=_HEARTBEAT,
+                        default=DEFAULT_HEARTBEAT,
                         help="ZMQ socket for the heartbeat.")
 
     args = parser.parse_args()
@@ -140,7 +139,7 @@ def main(args=sys.argv):
 
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
-    worker = Worker(args.backend, target=target, heartbeat=args.heartbeat)
+    worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat)
 
     try:
         worker.start()

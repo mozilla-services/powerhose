@@ -2,9 +2,8 @@ import threading
 import zmq
 import time
 
-from powerhose.util import send, recv, register_ipc_file
+from powerhose.util import send, recv, register_ipc_file, logger
 from powerhose.exc import TimeoutError
-from powerhose import logger
 
 
 class Ping(threading.Thread):

@@ -12,20 +12,14 @@ import argparse
 from zmq.eventloop import ioloop, zmqstream
 import zmq
 
-
-from powerhose import logger
-from powerhose.util import set_logger, register_ipc_file
+from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
+                            DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger)
 from powerhose.heartbeat import Pong
 
-
-_FRONTEND = "ipc:///tmp/powerhose-front.ipc"
-_BACKEND = "ipc:///tmp/powerhose-back.ipc"
-_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
 
 
 def timed(func):
     def _timed(*args, **kw):
-        from powerhose import logger
         start = time.time()
         try:
             return func(*args, **kw)
@@ -43,8 +37,8 @@ class Broker(object):
     - **backend**: the ZMQ socket to communicate with workers.
     - **heartbeat**: the ZMQ socket to receive heartbeat requests/
     """
-    def __init__(self, frontend=_FRONTEND, backend=_BACKEND,
-                 heartbeat=_HEARTBEAT):
+    def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
+                 heartbeat=DEFAULT_HEARTBEAT):
         logger.debug('Initializing the broker.')
 
         for endpoint in (frontend, backend, heartbeat):
@@ -138,15 +132,16 @@ class Broker(object):
 def main(args=sys.argv):
     parser = argparse.ArgumentParser(description='Powerhose broker.')
 
-    parser.add_argument('--frontend', dest='frontend', default=_FRONTEND,
+    parser.add_argument('--frontend', dest='frontend',
+                        default=DEFAULT_FRONTEND,
                         help="ZMQ socket to receive jobs.")
 
     parser.add_argument('--backend', dest='backend',
-                        default=_BACKEND,
+                        default=DEFAULT_BACKEND,
                         help="ZMQ socket for workers.")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=_HEARTBEAT,
+                        default=DEFAULT_HEARTBEAT,
                         help="ZMQ socket for the heartbeat.")
 
     parser.add_argument('--debug', action='store_true', default=False,

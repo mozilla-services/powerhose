@@ -1,10 +1,8 @@
 import zmq
 
-from powerhose.broker import _FRONTEND
 from powerhose.exc import TimeoutError
 from powerhose.job import Job
-from powerhose.util import send, recv
-from powerhose import logger
+from powerhose.util import send, recv, DEFAULT_FRONTEND, logger
 
 
 class Client(object):
@@ -16,7 +14,7 @@ class Client(object):
     - **timeout**: maximum allowed time for a job to run.
       Defaults to 5s.
     """
-    def __init__(self, frontend=_FRONTEND, timeout=5.):
+    def __init__(self, frontend=DEFAULT_FRONTEND, timeout=5.):
         self.ctx = zmq.Context(io_threads=2)
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
