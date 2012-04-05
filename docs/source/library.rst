@@ -33,6 +33,25 @@ The :func:`get_cluster` function creates a :class:`Broker` and several
 .. autofunction:: powerhose.get_cluster
 
 
+Example::
+
+    from powerhose import get_cluster
+    from powerhose.client import Client
+
+
+    cluster = get_cluster('example.echo', background=True)
+    cluster.start()
+
+    client = Client()
+
+    for i in range(10):
+        print client.execute(str(i))
+
+    cluster.stop()
+
+
+
+
 Job
 ===
 
