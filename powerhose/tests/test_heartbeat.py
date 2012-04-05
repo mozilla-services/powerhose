@@ -1,6 +1,6 @@
 import unittest
 import time
-from powerhose.heartbeat import Ping, Pong
+from powerhose.heartbeat import Stethoscope, Heartbeat
 
 
 class TestHeartbeat(unittest.TestCase):
@@ -15,19 +15,19 @@ class TestHeartbeat(unittest.TestCase):
         def onbeatlost():
             lost.append('.')
 
-        pong = Pong('ipc:///tmp/ping.ipc', timeout=0.1)
-        pong.start()
+        hb = Heartbeat('ipc:///tmp/stetho.ipc', interval=0.1)
+        hb.start()
         time.sleep(.2)
 
-        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat,
+        stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=onbeat,
                     onbeatlost=onbeatlost,
                     delay=0.1)
-        ping.start()
+        stetho.start()
 
         time.sleep(5.)
 
-        ping.stop()
-        pong.stop()
+        stetho.stop()
+        hb.stop()
         self.assertTrue(len(beats) > 10)
         self.assertEqual(len(lost),  0)
 
@@ -41,22 +41,22 @@ class TestHeartbeat(unittest.TestCase):
         def onbeatlost():
             lost.append('.')
 
-        pong = Pong('ipc:///tmp/ping.ipc', timeout=0.1)
-        pong.start()
+        hb = Heartbeat('ipc:///tmp/stetho.ipc', interval=0.1)
+        hb.start()
         time.sleep(.2)
 
-        ping = Ping('ipc:///tmp/ping.ipc', onbeat=onbeat,
+        stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=onbeat,
                     onbeatlost=onbeatlost,
                     delay=0.1)
-        ping.start()
+        stetho.start()
 
         time.sleep(2.)
-        pong.stop()         # the ponger stops
+        hb.stop()         # the hber stops
 
-        # the pinger continues for a while
+        # the stethoer continues for a while
         time.sleep(2.)
 
-        ping.stop()
+        stetho.stop()
 
         self.assertTrue(len(beats) > 0)
         self.assertTrue(len(lost) > 3)
