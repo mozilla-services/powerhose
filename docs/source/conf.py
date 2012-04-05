@@ -51,7 +51,7 @@ CURDIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(CURDIR, '..', '..'))
 sys.path.append(os.path.join(CURDIR, '..'))
 
-extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.blockdiag']
+extensions = ['sphinx.ext.autodoc'   ]#, 'sphinxcontrib.blockdiag']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

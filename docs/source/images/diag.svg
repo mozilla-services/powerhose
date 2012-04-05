@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg viewBox="0 0 640 280" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs id="defs_block">
+    <filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
+      <feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2"/>
+    </filter>
+  </defs>
+  <title>blockdiag</title>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="67" y="46"/>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="259" y="46"/>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="451" y="46"/>
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="451" y="206"/>
+  <rect fill="rgb(254,241,225)" height="40" stroke="rgb(0,0,0)" width="128" x="64" y="40"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="110" y="66">Client</text>
+  <ellipse cx="64" cy="40" fill="pink" rx="12" ry="12" stroke="rgb(0,0,0)"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="61" y="46">1</text>
+  <rect fill="rgb(100,149,237)" height="40" stroke="rgb(0,0,0)" width="128" x="256" y="40"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="302" y="66">Broker</text>
+  <ellipse cx="256" cy="40" fill="pink" rx="12" ry="12" stroke="rgb(0,0,0)"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="253" y="46">2</text>
+  <rect fill="rgb(255,127,80)" height="40" stroke="rgb(0,0,0)" width="128" x="448" y="40"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="488" y="66">Worker 1</text>
+  <ellipse cx="512" cy="140" fill="rgb(0,0,0)" rx="4" ry="4" stroke="rgb(0,0,0)"/>
+  <ellipse cx="512" cy="120" fill="rgb(0,0,0)" rx="4" ry="4" stroke="rgb(0,0,0)"/>
+  <ellipse cx="512" cy="160" fill="rgb(0,0,0)" rx="4" ry="4" stroke="rgb(0,0,0)"/>
+  <rect fill="rgb(255,127,80)" height="40" stroke="rgb(0,0,0)" width="128" x="448" y="200"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="488" y="226">Worker N</text>
+  <ellipse cx="448" cy="200" fill="pink" rx="12" ry="12" stroke="rgb(0,0,0)"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="445" y="206">3</text>
+  <path d="M 200 60 L 248 60" fill="none" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="193,60 200,56 200,64 193,60" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="255,60 248,56 248,64 255,60" stroke="rgb(0,0,0)"/>
+  <rect fill="white" height="15" stroke="rgb(0,0,0)" width="47" x="201" y="38"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="209" y="51">front</text>
+  <path d="M 392 60 L 440 60" fill="none" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="385,60 392,56 392,64 385,60" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="447,60 440,56 440,64 447,60" stroke="rgb(0,0,0)"/>
+  <rect fill="white" height="15" stroke="rgb(0,0,0)" width="41" x="396" y="38"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="404" y="51">back</text>
+  <path d="M 392 60 L 416 60" fill="none" stroke="rgb(0,0,0)"/>
+  <path d="M 416 60 L 416 220" fill="none" stroke="rgb(0,0,0)"/>
+  <path d="M 416 220 L 440 220" fill="none" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="385,60 392,56 392,64 385,60" stroke="rgb(0,0,0)"/>
+  <polygon fill="rgb(0,0,0)" points="447,220 440,216 440,224 447,220" stroke="rgb(0,0,0)"/>
+  <rect fill="white" height="15" stroke="rgb(0,0,0)" width="41" x="396" y="198"/>
+  <text fill="rgb(0,0,0)" font-family="sansserif" font-size="11" font-style="normal" font-weight="normal" x="404" y="211">back</text>
+</svg>

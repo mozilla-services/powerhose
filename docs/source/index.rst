@@ -18,7 +18,10 @@ Powerhose is an implementation of the
 `Request-Reply Broker <http://zguide.zeromq.org/page:all#A-Request-Reply-Broker>`_
 pattern in ZMQ.
 
-.. blockdiag::
+.. image:: images/diag.svg
+   :width: 80 %
+
+.. Commented out for now blockdiag
 
    diagram {
      default_fontsize = 20;

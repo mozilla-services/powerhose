@@ -15,8 +15,7 @@ Powerhose is organized into a simple hierarchy of classes and a few functions:
 - :class:`Worker` -- A class that connects to a broker and pass jobs it receives
   to a Python callable.
 
-- :class:`Ping` and :class:`Pong` -- implements q heartbeat. The :class:`Broker` class
-  runs a :class:`Pong` instance and each worker a  :class:`Ping` instance.
+- :class:`Heartbeat` and :class:`Stethoscope` -- implements a heartbeat.
 
 - :class:`Client` -- A class that connects to a broker and let you run jobs against
   it.
@@ -89,10 +88,15 @@ Worker
 Heartbeat
 =========
 
-.. autoclass:: powerhose.heartbeat.Ping
+The :class:`Broker` class runs a :class:`Heartbeat` instance that regularly
+sends a *BEAT* message on a PUB channel. Each worker has a  :class:`Stethoscope`
+instance that subscribes to the channel, to check if the :class:`Broker` is still
+around.
+
+.. autoclass:: powerhose.heartbeat.Heartbeat
    :members: stop,start
 
-.. autoclass:: powerhose.heartbeat.Pong
+.. autoclass:: powerhose.heartbeat.Stethoscope
    :members: stop,start
 
 
