@@ -4,6 +4,7 @@ from bottle import route, request, default_app
 from pycryptopp.publickey import rsa
 import time
 import threading
+import thread
 
 from gevent import monkey
 from gevent_zeromq import monkey_patch
@@ -28,24 +29,34 @@ class RSA3248(object):
 
 crypto = RSA3248()
 
+clients = {}
+
+def get_client():
+    id = thread.get_ident()
+    if id not in clients:
+        clients[id] = Client()
+    return clients[id]
+
 
 def sign(job):
-    return crypto.sign(job.data)
+    crypto.sign(job.data)
+    return 'OK'
 
 
 @route('/', method='POST')
 def index():
     data = request.body.read()
-    return crypto.sign(data)
+    crypto.sign(data)
+    return 'OK'
 
 
 @route('/phose', method='POST')
 def phose():
     data = request.body.read()
-    return client.execute(data)
+    return get_client().execute(data)
 
 
-client = Client()
+
 application = default_app()
 
 
