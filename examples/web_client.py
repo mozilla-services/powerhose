@@ -1,6 +1,5 @@
 from wsgiref.simple_server import make_server
 import json
-import sys
 import time
 
 from powerhose.client import Client

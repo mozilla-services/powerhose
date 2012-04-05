@@ -1,12 +1,13 @@
 import hmac
 import time
-import threading
-
 import binascii
 import os
 import sys
-
+import subprocess
 import threading
+
+from powerhose import get_cluster
+from powerhose.client import Client
 
 
 _KEY = binascii.b2a_hex(os.urandom(4096))[:4096]
@@ -50,7 +51,7 @@ def simple():
         _sign(str(i))
 
 
-@timed('%d calls, %d threads'% (_SIZE, _THREADS))
+@timed('%d calls, %d threads' % (_SIZE, _THREADS))
 def simple_3():
     def _t():
         for i in range(_ONE):
@@ -69,9 +70,7 @@ def simple_3():
 def _phose3():
 
     def _t():
-        from powerhose.client import Client
         client = Client()
-
         for i in range(_ONE):
             try:
                 client.execute(str(i))
@@ -86,7 +85,6 @@ def _phose3():
         t.join()
 
 
-
 @timed('%d calls via phose. %d workers' % (_SIZE, _PROC))
 def _phose(client):
     for i in range(_SIZE):
@@ -97,8 +95,6 @@ def _phose(client):
 
 
 def phose():
-    from powerhose import get_cluster
-    from powerhose.client import Client
     client = Client()
     p = run_cluster()
     time.sleep(5.)
@@ -107,8 +103,8 @@ def phose():
     finally:
         p.terminate()
 
+
 def phose_3():
-    from powerhose import get_cluster
     p = run_cluster()
     time.sleep(5.)
     try:
@@ -118,8 +114,6 @@ def phose_3():
 
 
 def _run_cluster():
-    from powerhose import get_cluster
-    from powerhose.client import Client
     cluster = get_cluster('bench.sign', debug=False,
                           numprocesses=_PROC,
                           logfile='/tmp/phose')
@@ -130,7 +124,6 @@ def _run_cluster():
 
 
 def run_cluster():
-    import subprocess
     cmd = sys.executable + ' -c "import bench; bench._run_cluster()"'
     p = subprocess.Popen(cmd, shell=True)
     return p
