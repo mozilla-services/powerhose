@@ -44,15 +44,15 @@ The three main parts are:
 2. a broker that binds a socket to get some job (*"front"*) from clients,
    and another socket for workers (*"back"*) to connect.
 
-3. workers that connect to the "back" socket of the broker, receives jobs
-   and end back results.
+3. workers that connect to the "back" socket of the broker, receive jobs
+   and send back results.
 
 
 When client sends a job, the broker simply re-routes it to one of its
 workers, then gets back the result and send it back to the client.
 
-Workers also ping the broker on a regular basis via a *"heartbeat"* socket
-and die in case the broker has been offline for too long.
+Workers also subscribe to a *"heartbeat"* socket that receives regular
+heart beats from the broker. When the beat is lost, workers simply die.
 
 Powerhose uses `Circus <http://circus.readthedocs.org>`_ to manage the
 life of the broker and the workers, and provide high level APIs for your
