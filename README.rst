@@ -2,7 +2,7 @@
 Powerhose
 =========
 
-Powerhose turns your CPU-bound tasks into I/O-bound tasks so your applications
+Powerhose turns your CPU-bound tasks into I/O-bound tasks so your Python applications
 are easier to scale.
 
 Powerhose is an implementation of the
