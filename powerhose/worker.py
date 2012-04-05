@@ -15,7 +15,7 @@ from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
                             DEFAULT_HEARTBEAT)
 from powerhose.job import Job
 from powerhose.util import resolve_name
-from powerhose.heartbeat import Ping
+from powerhose.heartbeat import Stethoscope
 
 from zmq.eventloop import ioloop, zmqstream
 
@@ -37,7 +37,7 @@ class Worker(object):
     def __init__(self, target, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3):
         logger.debug('Initializing the worker.')
-        self.ctx = zmq.Context(io_threads=2)
+        self.ctx = zmq.Context()
         self.backend = backend
         self._backend = self.ctx.socket(zmq.REP)
         self._backend.connect(self.backend)
@@ -46,8 +46,9 @@ class Worker(object):
         self.loop = ioloop.IOLoop()
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
-        self.ping = Ping(heartbeat, onbeatlost=self.lost, delay=ping_delay,
-                         retries=ping_retries)
+        self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
+                                delay=ping_delay, retries=ping_retries,
+                                ctx=self.ctx)
         self.debug = logger.isEnabledFor(logging.DEBUG)
 
     def _handle_recv_back(self, msg):

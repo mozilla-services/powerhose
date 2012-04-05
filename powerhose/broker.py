@@ -13,7 +13,7 @@ import zmq
 
 from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
                             DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger)
-from powerhose.heartbeat import Pong
+from powerhose.heartbeat import Heartbeat
 
 
 class Broker(object):
@@ -33,7 +33,7 @@ class Broker(object):
             if endpoint.startswith('ipc'):
                 register_ipc_file(endpoint)
 
-        self.context = zmq.Context(io_threads=2)
+        self.context = zmq.Context()
 
         # setting up the two sockets
         self._frontend = self.context.socket(zmq.ROUTER)
@@ -49,7 +49,7 @@ class Broker(object):
         self._backstream.on_recv(self._handle_recv_back)
 
         # heartbeat
-        self.pong = Pong(heartbeat)
+        self.pong = Heartbeat(heartbeat, ctx=self.context)
 
         # status
         self.started = False

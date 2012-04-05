@@ -1,40 +1,51 @@
 import threading
 import zmq
 import time
+import os
 
-from powerhose.util import send, recv, register_ipc_file, logger
-from powerhose.exc import TimeoutError
+from powerhose.util import register_ipc_file, logger, DEFAULT_HEARTBEAT
 
 
-class Ping(threading.Thread):
+class Stethoscope(threading.Thread):
     """Class that implements a ZMQ heartbeat client.
 
     Options:
 
     - **endpoint** : The ZMQ socket to call.
     - **warmup_delay** : The delay before starting to Ping. Defaults to 5s.
-    - **delay**: The delay between two pings. Defaults to 1s.
+    - **delay**: The delay between two pings. Defaults to 3s.
     - **retries**: The number of attempts to ping. Defaults to 3.
     - **onbeatlost**: a callable that will be called when a ping failed.
       If the callable returns **True**, the ping quits. Defaults to None.
     - **onbeat**: a callable that will be called when a ping succeeds.
       Defaults to None.
     """
-    def __init__(self, endpoint, warmup_delay=.5, delay=1., retries=3,
-                 onbeatlost=None, onbeat=None):
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=3.,
+                 retries=3,
+                 onbeatlost=None, onbeat=None, ctx=None):
         threading.Thread.__init__(self)
         self.daemon = True
         if endpoint.startswith('ipc:'):
             register_ipc_file(endpoint)
-        self.context = zmq.Context()
-        self._endpoint = self.context.socket(zmq.REQ)
-        self._endpoint.connect(endpoint)
+        if ctx is None:
+            self.context = zmq.Context()
+        else:
+            self.context = ctx
+        self.endpoint = endpoint
         self.running = False
         self.delay = delay
         self.retries = retries
         self.onbeatlost = onbeatlost
         self.onbeat = onbeat
         self.warmup_delay = warmup_delay
+        self._endpoint = self.context.socket(zmq.SUB)
+        logger.debug('Subscribing to ' + self.endpoint)
+        self._endpoint.setsockopt(zmq.SUBSCRIBE, '')
+        self._endpoint.linger = 0
+        self._endpoint.identity = str(os.getpid())
+        self._endpoint.connect(self.endpoint)
+        self._poller = zmq.Poller()
+        self._poller.register(self._endpoint, zmq.POLLIN)
 
     def start(self):
         """Starts the pinger"""
@@ -43,80 +54,68 @@ class Ping(threading.Thread):
     def run(self):
         time.sleep(self.warmup_delay)
         self.running = True
-
         while self.running:
-            # sending a PING
-            try:
-                send(self._endpoint, 'PING', max_retries=self.retries,
-                     retry_sleep=self.delay)
-            except TimeoutError:
-                if self.onbeatlost is not None:
-                    if self.onbeatlost():
-                        self.running = False
-                continue
-            except zmq.ZMQError:
-                if self._endpoint.closed and not self.running:
-                    return
-                raise
+            # waiting for the BEAT
+            tries = 0
+            logger.debug('Waiting for the BEAT')
 
-            # waiting for the PONG
-            try:
-                res = recv(self._endpoint, max_retries=self.retries,
-                        retry_sleep=self.delay)
-            except TimeoutError:
-                if self.onbeatlost is not None:
-                    if self.onbeatlost():
-                        self.running = False
-                continue
-            except zmq.ZMQError:
-                if self._endpoint.closed and not self.running:
-                    return
-                raise
+            while tries < self.retries:
+                events = dict(self._poller.poll(self.delay * 1000))
 
-            if res != 'PONG':       # wat ?
-                if self.onbeatlost is not None:
-                    if self.onbeatlost():
-                        self.running = False
-                continue
+                if events != {}:
+                    break
 
-            if self.running:
-                # worked
+                logger.debug('nothing came back')
+                tries += 1
+                if tries == self.retries:
+                    if self.onbeatlost is not None and self.onbeatlost():
+                        self.running = False
+                        return
+                time.sleep(self.delay)
+
+            if events and events[self._endpoint] == zmq.POLLIN:
+                msg = self._endpoint.recv()
                 if self.onbeat is not None:
                     self.onbeat()
-
-                logger.debug('Pinged!')
+                logger.debug(msg)
                 time.sleep(self.delay)
 
         logger.debug('Ping loop over')
 
     def stop(self):
         """Stops the Pinger"""
-        logger.debug('Stopping the pinger')
+        logger.debug('Stopping the Pinger')
         self.running = False
-        self.context.destroy(0)
         self.join()
+        self.context.destroy(0)
 
 
-class Pong(threading.Thread):
+class Heartbeat(threading.Thread):
     """Class that implements a ZMQ heartbeat server.
 
     Options:
 
     - **endpoint** : The ZMQ socket to call.
-    - **timeout** : Timeout between two polls.
+    - **interval** : Interval between two beat.
     """
-    def __init__(self, endpoint, timeout=5.):
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=2., ctx=None):
         threading.Thread.__init__(self)
         self.daemon = True
-        self.context = zmq.Context(io_threads=2)
+        if ctx is None:
+            self.context = zmq.Context()
+        else:
+            self.context = ctx
         if endpoint.startswith('ipc:'):
             register_ipc_file(endpoint)
-        self._endpoint = self.context.socket(zmq.REP)
-        self._endpoint.bind(endpoint)
-        self.poller = zmq.Poller()
-        self.poller.register(self._endpoint, zmq.POLLIN)
+        self.endpoint = endpoint
         self.running = False
-        self.timeout = timeout
+        self.interval = interval
+        self._endpoint = self.context.socket(zmq.PUB)
+        logger.debug('Publishing to ' + self.endpoint)
+        self._endpoint.linger = 0
+        self._endpoint.identity = b'HB'
+        self._endpoint.hwm = 0
+        self._endpoint.bind(self.endpoint)
 
     def start(self):
         """Starts the Pong service"""
@@ -124,32 +123,13 @@ class Pong(threading.Thread):
 
     def run(self):
         self.running = True
-
         while self.running:
-            try:
-                events = dict(self.poller.poll(self.timeout * 1000))
-            except zmq.ZMQError, e:
-                logger.debug("The poll failed")
-                logger.debug(str(e))
-                break
-
-            if len(events) == 0:
-                continue
-
-            try:
-                msg = recv(self._endpoint)
-            except TimeoutError:
-                continue    # ah well...
-
-            if msg != 'PING':       # wat ?
-                continue   # ah well
-
-            send(self._endpoint, 'PONG')
-            logger.debug('Ponged!')
+            self._endpoint.send('BEAT')
+            logger.debug('*beat*')
+            time.sleep(self.interval)
 
     def stop(self):
         """Stops the Pong service"""
         self.running = False
-        time.sleep(self.timeout)
-        self.context.destroy(0)
         self.join()
+        self.context.destroy(0)
