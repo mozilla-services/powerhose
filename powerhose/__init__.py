@@ -6,7 +6,7 @@ import sys
 import argparse
 
 from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
-                            DEFAULT_FRONTEND, logger)
+                            DEFAULT_FRONTEND)
 
 
 def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
@@ -26,8 +26,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     - **working_dir**: The working directory. Defaults to *"."*
     - **logfile**: The file to log into. Defaults to stdout.
     - **debug**: If True, the logs are at the DEBUG level. Defaults to False
-    - **background**: If True, the cluster is run in the background. Defaults to
-      False.
+    - **background**: If True, the cluster is run in the background.
+      Defaults to False.
     """
     from circus import get_arbiter
 

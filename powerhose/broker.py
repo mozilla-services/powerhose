@@ -4,7 +4,6 @@
 """ Jobs runner.
 """
 import errno
-import time
 import sys
 import traceback
 import argparse
@@ -15,17 +14,6 @@ import zmq
 from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
                             DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger)
 from powerhose.heartbeat import Pong
-
-
-
-def timed(func):
-    def _timed(*args, **kw):
-        start = time.time()
-        try:
-            return func(*args, **kw)
-        finally:
-            logger.debug('%.4f' % (time.time() - start))
-    return _timed
 
 
 class Broker(object):

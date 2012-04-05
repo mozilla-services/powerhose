@@ -7,6 +7,7 @@ import os
 import sys
 import traceback
 import argparse
+import logging
 
 import zmq
 
@@ -47,13 +48,14 @@ class Worker(object):
         self._backstream.on_recv(self._handle_recv_back)
         self.ping = Ping(heartbeat, onbeatlost=self.lost, delay=ping_delay,
                          retries=ping_retries)
+        self.debug = logger.isEnabledFor(logging.DEBUG)
 
     def _handle_recv_back(self, msg):
-        # back => front
-        logger.debug('front <- back')
-
         # do the job and send the result
-        start = time.time()
+        if self.debug:
+            logger.debug('Job received')
+            start = time.time()
+
         try:
             res = self.target(Job.load_from_string(msg[0]))
         except Exception, e:
@@ -62,9 +64,18 @@ class Worker(object):
             exc.insert(0, str(e))
             res = '\n'.join(exc)
             logger.error(res)
+
+        if self.debug:
             logger.debug('%.6f' % (time.time() - start))
 
-        self._backstream.send(res)
+        try:
+            self._backstream.send(res)
+        except Exception, e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            res = '\n'.join(exc)
+            logger.error(res)
 
     def lost(self):
         logger.info('Master lost ! Quitting..')

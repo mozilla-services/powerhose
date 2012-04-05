@@ -96,36 +96,6 @@ def _phose(client):
             print 'error'
 
 
-@timed('%d calls via phose + gevent. %d workers' % (_SIZE, _PROC))
-def _phose_gevent(client):
-    for i in range(_SIZE):
-        try:
-            client.execute(str(i))
-        except:
-            print 'error'
-
-
-@timed('%d calls via phose + gevent, %d threads. %d workers' % (_SIZE, _THREADS, _PROC))
-def _phose_gevent_3():
-    def _t():
-        from powerhose.client import Client
-        client = Client()
-
-        for i in range(_ONE):
-            try:
-                client.execute(str(i))
-            except:
-                print 'error'
-
-    th = [threading.Thread(target=_t) for i in range(_THREADS)]
-    for t in th:
-        t.start()
-
-    for t in th:
-        t.join()
-
-
-
 def phose():
     from powerhose import get_cluster
     from powerhose.client import Client
@@ -166,30 +136,6 @@ def run_cluster():
     return p
 
 
-def phose_gevent():
-    from gevent import monkey; monkey.patch_all()
-    from gevent_zeromq import monkey_patch; monkey_patch()
-    from powerhose.client import Client
-
-    client = Client()
-    p = run_cluster()
-    time.sleep(5.)
-    try:
-        _phose_gevent(client)
-    finally:
-        p.terminate()
-
-
-def phose_gevent_3():
-    from gevent import monkey; monkey.patch_all()
-    from gevent_zeromq import monkey_patch; monkey_patch()
-    p = run_cluster()
-    time.sleep(5.)
-    try:
-        _phose_gevent_3()
-    finally:
-        p.terminate()
-
 @timed('Single job')
 def single():
     _sign('1')
@@ -197,10 +143,7 @@ def single():
 
 if __name__ == '__main__':
     single()
-    simple()
+    #simple()
     simple_3()
-    phose()
+    #phose()
     phose_3()
-    phose_gevent()
-    phose_gevent_3()
-

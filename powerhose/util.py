@@ -151,3 +151,13 @@ def resolve_name(name):
             raise ImportError(exc)
 
     return ret
+
+
+def timed(func):
+    def _timed(*args, **kw):
+        start = time.time()
+        try:
+            return func(*args, **kw)
+        finally:
+            logger.debug('%.4f' % (time.time() - start))
+    return _timed
