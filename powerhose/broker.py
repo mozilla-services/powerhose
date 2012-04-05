@@ -49,7 +49,7 @@ class Broker(object):
         self._backstream.on_recv(self._handle_recv_back)
 
         # heartbeat
-        self.pong = Heartbeat(heartbeat, ctx=self.context)
+        self.pong = Heartbeat(heartbeat)
 
         # status
         self.started = False

@@ -22,15 +22,10 @@ class Stethoscope(threading.Thread):
     """
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=3.,
                  retries=3,
-                 onbeatlost=None, onbeat=None, ctx=None):
+                 onbeatlost=None, onbeat=None,):
         threading.Thread.__init__(self)
         self.daemon = True
-        if endpoint.startswith('ipc:'):
-            register_ipc_file(endpoint)
-        if ctx is None:
-            self.context = zmq.Context()
-        else:
-            self.context = ctx
+        self.context = zmq.Context()
         self.endpoint = endpoint
         self.running = False
         self.delay = delay
@@ -71,23 +66,21 @@ class Stethoscope(threading.Thread):
                     if self.onbeatlost is not None and self.onbeatlost():
                         self.running = False
                         return
-                time.sleep(self.delay)
 
             if events and events[self._endpoint] == zmq.POLLIN:
                 msg = self._endpoint.recv()
                 if self.onbeat is not None:
                     self.onbeat()
                 logger.debug(msg)
-                time.sleep(self.delay)
 
         logger.debug('Ping loop over')
 
+
     def stop(self):
         """Stops the Pinger"""
-        logger.debug('Stopping the Pinger')
+        #logger.debug('Stopping the Pinger')
         self.running = False
         self.join()
-        self.context.destroy(0)
 
 
 class Heartbeat(threading.Thread):
@@ -98,20 +91,17 @@ class Heartbeat(threading.Thread):
     - **endpoint** : The ZMQ socket to call.
     - **interval** : Interval between two beat.
     """
-    def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=2., ctx=None):
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=2.):
         threading.Thread.__init__(self)
         self.daemon = True
-        if ctx is None:
-            self.context = zmq.Context()
-        else:
-            self.context = ctx
+        self.context = zmq.Context()
         if endpoint.startswith('ipc:'):
             register_ipc_file(endpoint)
         self.endpoint = endpoint
         self.running = False
         self.interval = interval
-        self._endpoint = self.context.socket(zmq.PUB)
         logger.debug('Publishing to ' + self.endpoint)
+        self._endpoint = self.context.socket(zmq.PUB)
         self._endpoint.linger = 0
         self._endpoint.identity = b'HB'
         self._endpoint.hwm = 0
@@ -132,4 +122,3 @@ class Heartbeat(threading.Thread):
         """Stops the Pong service"""
         self.running = False
         self.join()
-        self.context.destroy(0)
