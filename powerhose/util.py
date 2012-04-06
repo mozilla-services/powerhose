@@ -12,25 +12,10 @@ import sys
 from powerhose.exc import TimeoutError
 
 
-_SEP = '*****'
 DEFAULT_FRONTEND = "ipc:///tmp/powerhose-front.ipc"
 DEFAULT_BACKEND = "ipc:///tmp/powerhose-back.ipc"
 DEFAULT_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
 logger = logging.getLogger('powerhose')
-
-
-# will do better later
-def serialize(*seq):
-    for part in seq:
-        if _SEP in part:
-            raise NotImplementedError
-    return _SEP.join(seq)
-
-
-def unserialize(data):
-    return data.split(_SEP)
-
-
 _IPC_FILES = []
 
 
