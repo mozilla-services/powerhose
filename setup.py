@@ -1,3 +1,6 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 import os
 from setuptools import setup, find_packages
 
@@ -20,6 +23,11 @@ setup(name='powerhose',
       description='Implementation of the Request-Reply Broken pattern in ZMQ',
       long_description=README + '\n\n' + CHANGES,
       zip_safe=False,
+      license='MPLv2.0',
+      classifiers=[
+        "Programming Language :: Python",
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
       install_requires=requires,
       author='Mozilla Services',
       author_email='services-dev@mozilla.org',
