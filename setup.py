@@ -31,7 +31,9 @@ setup(name='powerhose',
       install_requires=requires,
       author='Mozilla Services',
       author_email='services-dev@mozilla.org',
-      url='https://github.com/mozilla-services/cornice',
+      url='https://github.com/mozilla-services/powerhose',
+      test_requires=['nose'],
+      test_suite = 'nose.collector',
       entry_points="""
       [console_scripts]
       powerhose-broker = powerhose.broker:main
