@@ -3,7 +3,7 @@ import zmq
 import time
 import os
 
-from powerhose.util import register_ipc_file, logger, DEFAULT_HEARTBEAT
+from powerhose.util import logger, DEFAULT_HEARTBEAT
 
 
 class Stethoscope(threading.Thread):

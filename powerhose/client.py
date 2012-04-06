@@ -4,7 +4,7 @@ from Queue import Queue
 import traceback
 import sys
 
-from powerhose.exc import TimeoutError
+from powerhose.exc import TimeoutError, ExecutionError
 from powerhose.job import Job
 from powerhose.util import send, recv, DEFAULT_FRONTEND, logger
 
@@ -45,6 +45,21 @@ class Client(object):
         lot of jobs simultaneously on a broker, use the :class:`Pool` class.
 
         """
+        try:
+            res = self._execute(job, timeout)
+            if res.startswith('ERROR:'):
+                raise ExecutionError(res[len('ERROR:'):])
+        except Exception, e:
+            # logged, connector replaced.
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc = traceback.format_tb(exc_traceback)
+            exc.insert(0, str(e))
+            logger.error('\n'.join(exc))
+            raise
+
+        return res
+
+    def _execute(self, job, timeout=None):
         if isinstance(job, str):
             job = Job(job)
 
@@ -83,16 +98,9 @@ class Pool(object):
         connector = self._connectors.get(timeout=timeout)
         try:
             return connector.execute(job, timeout)
-        except Exception, e:
-            # logged, connector replaced.
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            exc = traceback.format_tb(exc_traceback)
-            exc.insert(0, str(e))
-            logger.error('\n'.join(exc))
-            try:
-                connector.ctx.destroy(0)
-            except Exception:
-                pass
+        except Exception:
+            # connector replaced.
             self._connectors.put(Client(self.frontend, self.timeout))
-        finally:
+            raise
+        else:
             self._connectors.put(connector)

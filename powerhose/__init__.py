@@ -4,6 +4,7 @@
 import os
 import sys
 import argparse
+import time
 
 from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                             DEFAULT_FRONTEND)
@@ -61,7 +62,19 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                 ]
 
     # XXX add more options
-    return get_arbiter(watchers, background=background)
+    arbiter = get_arbiter(watchers, background=background)
+
+    # give a chance to all processes to start
+    # XXX this should be in Circus
+    if background:
+        start = time.time()
+        while time.time() - start < 5:
+            statuses = [status == 'active' for status in
+                        arbiter.statuses().values()]
+            if all(statuses):
+                break
+
+    return arbiter
 
 
 def main(args=sys.argv):

@@ -62,7 +62,7 @@ class Worker(object):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
-            res = '\n'.join(exc)
+            res = 'ERROR:' + '\n'.join(exc)
             logger.error(res)
 
         if self.debug:
