@@ -100,10 +100,12 @@ class Pool(object):
     def execute(self, job, timeout=None):
         connector = self._connectors.get(timeout=timeout)
         try:
-            return connector.execute(job, timeout)
+            res = connector.execute(job, timeout)
         except Exception:
             # connector replaced.
             self._connectors.put(Client(self.frontend, self.timeout))
             raise
         else:
             self._connectors.put(connector)
+
+        return res
