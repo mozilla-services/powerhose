@@ -3,6 +3,7 @@
 
 #include <zmq.hpp>
 #include <vector>
+#include <string>
 
 
 class RegisterError: public ::std::exception {

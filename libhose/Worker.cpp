@@ -58,33 +58,34 @@ void callSocket(::std::string* request, ::std::string* response, ::zmq::socket_t
     heartbeat -- pings the master 
 */
 void *heartbeat(void *ptr) {
-Worker *worker = (Worker*) ptr;
-::std::string pong = "PONG";
-::std::vector< ::std::string> vreq;
-vreq.push_back("PING");
-vreq.push_back(worker->receiverChannel);
-::std::string req;
-serialize(&vreq, &req);
-int failures = 0;
-int max_failures = 10;
+    Worker *worker = (Worker*) ptr;
+    ::std::string pong = "PONG";
+    ::std::vector< ::std::string> vreq;
+    vreq.push_back("PING");
+    vreq.push_back(worker->receiverChannel);
+    ::std::string req;
+    serialize(&vreq, &req);
+    int failures = 0;
+    int max_failures = 10;
 
-while (worker->heartbeatRunning && failures < max_failures) {
-    try {
-        callSocket(&req, &pong, worker->endpoint, worker->timeout);
-        ::std::cout << "ping did work" << ::std::endl;
+    while (worker->heartbeatRunning && failures < max_failures) {
+        try {
+            callSocket(&req, &pong, worker->endpoint, worker->timeout);
+            ::std::cout << "ping did work" << ::std::endl;
+        }
+        catch (...) {
+            ::std::cout << "ping did not work!" << ::std::endl;
+            failures += 1;
+        }
+        // we need to sleep here
+        sleep(worker->heartbeatDelay);
     }
-    catch (...) {
-        ::std::cout << "ping did not work!" << ::std::endl;
-        failures += 1;
+    // if we quit because of failures, we need to toggle the worker flag
+    if (failures >= max_failures) {
+        worker->heartbeatFailed = true;
     }
-    // we need to sleep here
-    sleep(worker->heartbeatDelay);
-}
-// if we quit because of failures, we need to toggle the worker flag
-if (failures >= max_failures) {
-    worker->heartbeatFailed = true;
-}
-::std::cout << "bye!" << ::std::endl;
+    ::std::cout << "bye!" << ::std::endl;
+    return NULL;
 }
 
 

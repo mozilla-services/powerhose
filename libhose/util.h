@@ -1,5 +1,6 @@
 #include <zmq.hpp>
 #include <vector>
+#include <string>
 
 
 void str2msg(::std::string* data, ::zmq::message_t* msg);
