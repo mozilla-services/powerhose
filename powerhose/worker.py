@@ -50,11 +50,34 @@ class Worker(object):
                                 delay=ping_delay, retries=ping_retries)
         self.debug = logger.isEnabledFor(logging.DEBUG)
 
-    def _handle_recv_back(self, msg):
-        # do the job and send the result
+    def _stage_job(self, msg):
+        """
+        Overload this method to customize logging behavior when a job
+        is received by the worker
+        """
         if self.debug:
             logger.debug('Job received')
-            start = time.time()
+            self._start = time.time()
+
+    def _job_completed(self, res):
+        """
+        Overload this method to customize logging behavior just after
+        a job has completed or thrown an error
+        """
+        if self.debug:
+            logger.debug('%.6f' % (time.time() - self._start))
+
+    def _finalize_result(self, res):
+        """
+        Overload this method to customize logging behavior just after the
+        result of the job execution has been returned to the caller
+        """
+        pass
+
+    def _handle_recv_back(self, msg):
+        # do the job and send the result
+
+        self._stage_job(msg)
 
         try:
             res = self.target(Job.load_from_string(msg[0]))
@@ -65,8 +88,7 @@ class Worker(object):
             res = 'ERROR:' + '\n'.join(exc)
             logger.error(res)
 
-        if self.debug:
-            logger.debug('%.6f' % (time.time() - start))
+        self._job_completed(res)
 
         try:
             self._backstream.send(res)
@@ -76,6 +98,9 @@ class Worker(object):
             exc.insert(0, str(e))
             res = '\n'.join(exc)
             logger.error(res)
+
+        self._finalize_result(None)
+
 
     def lost(self):
         logger.info('Master lost ! Quitting..')
