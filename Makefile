@@ -4,14 +4,12 @@ DIR = $(CURDIR)/libhose
 INCLUDEDIR = -I$(DIR) -I/opt/local/include
 LIBDIR = -L$(DIR) -L/opt/local/lib
 OPTS = -g -Wall -Wextra 
-LIBS = -lpthread -lzmq -lprotobuf
+LIBS = -lpthread -lzmq
 
 .phony: all build buildex proto
 
 
-all:
-	build
-	buildex
+all: build buildex
 
 build:
 	cd $(DIR); rm -f libhose.a; rm -f *.o
