@@ -18,6 +18,8 @@ DEFAULT_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
 logger = logging.getLogger('powerhose')
 _IPC_FILES = []
 
+PARAMS = {}
+
 
 @atexit.register
 def _cleanup_ipc_files():
@@ -146,3 +148,28 @@ def timed(func):
         finally:
             logger.debug('%.4f' % (time.time() - start))
     return _timed
+
+
+def decode_params(params):
+    """Decode a string into a dict. This is mainly useful when passing a dict
+    trough the command line.
+
+    The params passed in "params" should be in the form of key:value, separated
+    by a pipe, the output is a python dict.
+    """
+    output_dict = {}
+    for items in params.split('|'):
+        key, value = items.split(':')
+        output_dict[key] = value
+    return output_dict
+
+
+def encode_params(intput_dict):
+    """Convert the dict given in input into a string of key:value separated
+    with pipes, like spam:yeah|eggs:blah
+    """
+    return '|'.join([':'.join(i) for i in intput_dict.items()])
+
+
+def get_params():
+    return PARAMS

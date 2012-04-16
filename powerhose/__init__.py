@@ -6,14 +6,16 @@ import sys
 import argparse
 import time
 
-from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
-                            DEFAULT_FRONTEND)
+from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
+                            DEFAULT_FRONTEND, encode_params, get_params)
+
+__all__ = ('get_cluster', 'get_params')
 
 
 def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
                 working_dir='.', logfile='stdout',
-                debug=False, background=False):
+                debug=False, background=False, worker_params=None):
     """Runs a Powerhose cluster.
 
     Options:
@@ -29,6 +31,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     - **debug**: If True, the logs are at the DEBUG level. Defaults to False
     - **background**: If True, the cluster is run in the background.
       Defaults to False.
+    - **worker_params**: a dict of params to pass to the worker. Default is
+      None.
     """
     from circus import get_arbiter
 
@@ -37,6 +41,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
         debug = ' --debug'
     else:
         debug = ''
+    if worker_params:
+        params = encode_params(worker_params)
 
     broker_cmd = [python, '-m', 'powerhose.broker', '--logfile',  logfile,
                   debug, '--frontend', frontend, '--backend', backend,
@@ -45,6 +51,9 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     worker_cmd = [python, '-m', 'powerhose.worker', target, '--logfile',
                   logfile, debug, '--backend', backend, '--heartbeat',
                   heartbeat]
+
+    if worker_params:
+        worker_cmd += ['--params', params]
 
     watchers = [{'name': 'broker',
                  'cmd': ' '.join(broker_cmd),

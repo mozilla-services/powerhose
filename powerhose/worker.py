@@ -11,10 +11,11 @@ import logging
 
 import zmq
 
+from powerhose import util
 from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
                             DEFAULT_HEARTBEAT)
 from powerhose.job import Job
-from powerhose.util import resolve_name
+from powerhose.util import resolve_name, decode_params
 from powerhose.heartbeat import Stethoscope
 
 from zmq.eventloop import ioloop, zmqstream
@@ -33,9 +34,11 @@ class Worker(object):
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
+    - **params** a dict containing the params to set for this worker.
     """
     def __init__(self, target, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3):
+                 heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3,
+                 params=None):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.backend = backend
@@ -49,6 +52,7 @@ class Worker(object):
         self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                 delay=ping_delay, retries=ping_retries)
         self.debug = logger.isEnabledFor(logging.DEBUG)
+        self.params = params
 
     def _handle_recv_back(self, msg):
         # do the job and send the result
@@ -97,6 +101,8 @@ class Worker(object):
     def start(self):
         """Starts the worker
         """
+        util.PARAMS = self.params
+
         logger.debug('Starting the worker loop')
 
         # running the pinger
@@ -137,20 +143,25 @@ def main(args=sys.argv):
                         help="Debug mode")
 
     parser.add_argument('--logfile', dest='logfile', default='stdout',
-                        help="File to log in to .")
+                        help="File to log in to.")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
                         default=DEFAULT_HEARTBEAT,
                         help="ZMQ socket for the heartbeat.")
 
+    parser.add_argument('--params', dest='params', default=None,
+                        help='The parameters to be used in the worker.')
+
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
     target = resolve_name(args.target)
+    params = decode_params(args.params)
 
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
-    worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat)
+    worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat,
+                    params=params)
 
     try:
         worker.start()
