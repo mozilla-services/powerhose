@@ -156,7 +156,10 @@ def main(args=sys.argv):
     set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
     target = resolve_name(args.target)
-    params = decode_params(args.params)
+    if args.params is None:
+        params = {}
+    else:
+        params = decode_params(args.params)
 
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
