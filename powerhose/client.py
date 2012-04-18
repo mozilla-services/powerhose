@@ -21,8 +21,8 @@ class Client(object):
     - **timeout**: maximum allowed time for a job to run.
       Defaults to 5s.
     """
-    def __init__(self, frontend=DEFAULT_FRONTEND, timeout=5.):
-        self.ctx = zmq.Context(io_threads=2)
+    def __init__(self, frontend=DEFAULT_FRONTEND, timeout=5., iothreads=5):
+        self.ctx = zmq.Context(io_threads=iothreads)
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
         logger.debug('Client connected to %s' % frontend)
