@@ -35,6 +35,7 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
       None.
     """
     from circus import get_arbiter
+    from circus.stream import StdoutStream, FileStream
 
     python = sys.executable
     if debug:
@@ -55,11 +56,18 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     if worker_params:
         worker_cmd += ['--params', params]
 
+    if logfile == 'stdout':
+        stream = {'class': StdoutStream}
+    else:
+        stream = {'class': FileStream}
+
     watchers = [{'name': 'broker',
                  'cmd': ' '.join(broker_cmd),
                  'working_dir': working_dir,
                  'shell': True,
                  'executable': python,
+                 'stderr_stream': stream,
+                 'stdout_stream': stream
                  },
                 {'name': 'workers',
                  'cmd': ' '.join(worker_cmd),
@@ -67,6 +75,9 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                  'working_dir': working_dir,
                  'shell': True,
                  'executable': python,
+                 'stderr_stream': stream,
+                 'stdout_stream': stream
+
                  }
                 ]
 
