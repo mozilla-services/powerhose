@@ -63,6 +63,10 @@ class Worker(object):
         try:
             res = self.target(Job.load_from_string(msg[0]))
         except Exception, e:
+            # in case of an error, we're building a message
+            # that's prefixed with ERROR:
+            #
+            # This message will be re-raised on the other side
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
@@ -74,12 +78,8 @@ class Worker(object):
 
         try:
             self._backstream.send(res)
-        except Exception, e:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            exc = traceback.format_tb(exc_traceback)
-            exc.insert(0, str(e))
-            res = '\n'.join(exc)
-            logger.error(res)
+        except Exception:
+            logging.error("Could not send back the result", exc_info=True)
 
     def lost(self):
         logger.info('Master lost ! Quitting..')
