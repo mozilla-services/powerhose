@@ -1,6 +1,12 @@
 CHANGES
 =======
 
+0.3 - ?
+-------
+
+- implemented timeout_max_overflow in the client.
+
+
 0.2 - 2012-04-17
 ----------------
 
