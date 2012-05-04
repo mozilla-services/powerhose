@@ -26,7 +26,7 @@ class Client(object):
       can be overflowed per worker. The client keeps a counter of
       executions that were longer than the regular timeout but shorter
       than **timeout_max_overflow**. When the number goes over
-    - **timeout_overflows**, the usual TimeoutError is raised.
+      **timeout_overflows**, the usual TimeoutError is raised.
       When a worker returns on time, the counter is reset.
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, timeout=1.,
@@ -120,6 +120,13 @@ class Pool(object):
     - **frontend**: ZMQ socket to call.
     - **timeout**: maximum allowed time for a job to run.
       Defaults to 5s.
+    - **timeout_max_overflow**: maximum timeout overflow allowed
+    - **timeout_overflows**: number of times in a row the timeout value
+      can be overflowed per worker. The client keeps a counter of
+      executions that were longer than the regular timeout but shorter
+      than **timeout_max_overflow**. When the number goes over
+      **timeout_overflows**, the usual TimeoutError is raised.
+      When a worker returns on time, the counter is reset.
     """
     def __init__(self, size=10, frontend=DEFAULT_FRONTEND, timeout=4.,
                  timeout_max_overflow=5., timeout_overflows=1):
