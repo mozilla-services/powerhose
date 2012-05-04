@@ -4,7 +4,6 @@
 import threading
 from Queue import Queue
 from collections import defaultdict
-import time
 import errno
 
 import zmq
@@ -13,7 +12,6 @@ from powerhose.exc import TimeoutError, ExecutionError
 from powerhose.job import Job
 from powerhose.util import (send, recv, DEFAULT_FRONTEND, logger,
                             extract_result, timed)
-
 
 
 class Client(object):
