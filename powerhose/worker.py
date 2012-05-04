@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import os
 import errno
 import time
 import os
@@ -53,6 +54,7 @@ class Worker(object):
                                 delay=ping_delay, retries=ping_retries)
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
+        self.pid = os.getpid()
 
     def _handle_recv_back(self, msg):
         # do the job and send the result
@@ -60,17 +62,15 @@ class Worker(object):
             logger.debug('Job received')
             start = time.time()
 
+        # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
-            res = self.target(Job.load_from_string(msg[0]))
+            res = '%d:OK:%s' % (self.pid,
+                                self.target(Job.load_from_string(msg[0])))
         except Exception, e:
-            # in case of an error, we're building a message
-            # that's prefixed with ERROR:
-            #
-            # This message will be re-raised on the other side
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
-            res = 'ERROR:' + '\n'.join(exc)
+            res = '%d:ERROR:%s' % (self.pid, '\n'.join(exc))
             logger.error(res)
 
         if self.debug:

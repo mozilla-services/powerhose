@@ -173,3 +173,8 @@ def encode_params(intput_dict):
 
 def get_params():
     return PARAMS
+
+
+def extract_result(data):
+    pid, result, data = data.split(':', 3)
+    return long(pid), result == 'OK', data
