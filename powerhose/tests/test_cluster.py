@@ -34,7 +34,7 @@ class TestCluster(unittest.TestCase):
         cl.start()
         self.clusters.append(cl)
         logger.debug('cluster ready')
-        return Client(front)
+        return Client(front, debug=True)
 
     def test_error(self):
         client = self._get_cluster('powerhose.tests.jobs.fail')

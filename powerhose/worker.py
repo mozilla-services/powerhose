@@ -15,7 +15,7 @@ from powerhose import util
 from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
                             DEFAULT_HEARTBEAT)
 from powerhose.job import Job
-from powerhose.util import resolve_name, decode_params
+from powerhose.util import resolve_name, decode_params, timed
 from powerhose.heartbeat import Stethoscope
 
 from zmq.eventloop import ioloop, zmqstream
@@ -59,12 +59,18 @@ class Worker(object):
         # do the job and send the result
         if self.debug:
             logger.debug('Job received')
-            start = time.time()
+            target = timed()(self.target)
+        else:
+            target = self.target
+
+        duration = -1
 
         # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
-            res = '%d:OK:%s' % (self.pid,
-                                self.target(Job.load_from_string(msg[0])))
+            res = target(Job.load_from_string(msg[0]))
+            if self.debug:
+                duration, res = res
+            res = '%d:OK:%s' % (self.pid, res)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
@@ -73,7 +79,7 @@ class Worker(object):
             logger.error(res)
 
         if self.debug:
-            logger.debug('%.6f' % (time.time() - start))
+            logger.debug('%.6f' % duration)
 
         try:
             self._backstream.send(res)

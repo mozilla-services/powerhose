@@ -5,12 +5,15 @@ import threading
 from Queue import Queue
 from collections import defaultdict
 import time
+import errno
 
 import zmq
 
 from powerhose.exc import TimeoutError, ExecutionError
 from powerhose.job import Job
-from powerhose.util import send, recv, DEFAULT_FRONTEND, logger, extract_result
+from powerhose.util import (send, recv, DEFAULT_FRONTEND, logger,
+                            extract_result, timed)
+
 
 
 class Client(object):
@@ -31,7 +34,7 @@ class Client(object):
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, timeout=1.,
                  timeout_max_overflow=1.5, timeout_overflows=1,
-                 iothreads=5):
+                 iothreads=5, debug=False):
         self.ctx = zmq.Context(io_threads=iothreads)
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
@@ -43,6 +46,7 @@ class Client(object):
         self.timeout_max_overflow = timeout_max_overflow * 1000
         self.timeout_overflows = timeout_overflows
         self.timeout_counters = defaultdict(int)
+        self.debug = debug
 
     def execute(self, job, timeout=None):
         """Runs the job
@@ -64,15 +68,13 @@ class Client(object):
         if timeout is None:
             timeout = self.timeout_max_overflow
 
-        # XXX this call is taking us time but we need it for the overflow
-        start = time.time()
         try:
-            worker_pid, res, data = extract_result(self._execute(job, timeout))
+            duration, res = timed(self.debug)(self._execute)(job, timeout)
+            worker_pid, res, data = res
 
             # if we overflowed we want to increment the counter
             # if not we reset it
-            duration = (time.time() - start) * 1000
-            if duration > self.timeout:
+            if duration * 1000 > self.timeout:
                 self.timeout_counters[worker_pid] += 1
 
                 # XXX well, we have the result but we want to timeout
@@ -85,10 +87,8 @@ class Client(object):
             if not res:
                 raise ExecutionError(data)
         except Exception:
-            duration = time.time() - start
             # logged, connector replaced.
-            logger.exception('Failed to execute job in %.4f seconds.' %
-                    duration)
+            logger.exception('Failed to execute the job.')
             raise
 
         return data
@@ -102,10 +102,17 @@ class Client(object):
 
         with self.lock:
             send(self.master, job.serialize())
-            socks = dict(self.poller.poll(timeout))
+
+            while True:
+                try:
+                    socks = dict(self.poller.poll(timeout))
+                    break
+                except zmq.ZMQError as e:
+                    if e.errno != errno.EINTR:
+                        raise
 
         if socks.get(self.master) == zmq.POLLIN:
-            return recv(self.master)
+            return extract_result(recv(self.master))
 
         raise TimeoutError()
 

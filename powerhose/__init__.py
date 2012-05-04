@@ -85,8 +85,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     # give a chance to all processes to start
     # XXX this should be in Circus
     if background:
-        start = time.time()
-        while time.time() - start < 5:
+        start = time.clock()
+        while time.clock() - start < 5:
             statuses = [status == 'active' for status in
                         arbiter.statuses().values()]
             if all(statuses):

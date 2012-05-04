@@ -140,13 +140,24 @@ def resolve_name(name):
     return ret
 
 
-def timed(func):
-    def _timed(*args, **kw):
-        start = time.time()
-        try:
-            return func(*args, **kw)
-        finally:
-            logger.debug('%.4f' % (time.time() - start))
+if sys.platform == "win32":
+    timer = time.clock
+else:
+    timer = time.time
+
+
+def timed(debug=False):
+    def _timed(func):
+        def __timed(*args, **kw):
+            start = timer()
+            try:
+                res = func(*args, **kw)
+            finally:
+                duration = timer() - start
+                if debug:
+                    logger.debug('%.4f' % duration)
+            return duration, res
+        return __timed
     return _timed
 
 
