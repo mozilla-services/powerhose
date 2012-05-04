@@ -4,7 +4,6 @@
 import os
 import errno
 import time
-import os
 import sys
 import traceback
 import argparse

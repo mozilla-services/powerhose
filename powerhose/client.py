@@ -3,8 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import threading
 from Queue import Queue
-import traceback
-import sys
 from collections import defaultdict
 import time
 
@@ -77,8 +75,8 @@ class Client(object):
             if duration > self.timeout:
                 self.timeout_counters[worker_pid] += 1
 
-                # XXX well, we have the result but we want to timeout nevertheless
-                # because that's been too much overflow
+                # XXX well, we have the result but we want to timeout
+                # nevertheless because that's been too much overflow
                 if self.timeout_counters[worker_pid] > self.timeout_overflows:
                     raise TimeoutError()
             else:
@@ -86,7 +84,7 @@ class Client(object):
 
             if not res:
                 raise ExecutionError(data)
-        except Exception, e:
+        except Exception:
             duration = time.time() - start
             # logged, connector replaced.
             logger.exception('Failed to execute job in %.4f seconds.' %
