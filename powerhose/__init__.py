@@ -8,6 +8,8 @@ import time
 
 from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_FRONTEND, encode_params, get_params)
+from powerhose.client import DEFAULT_TIMEOUT_MOVF
+
 
 __all__ = ('get_cluster', 'get_params')
 
@@ -15,7 +17,8 @@ __all__ = ('get_cluster', 'get_params')
 def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
                 working_dir='.', logfile='stdout',
-                debug=False, background=False, worker_params=None):
+                debug=False, background=False, worker_params=None,
+                timeout=DEFAULT_TIMEOUT_MOVF):
     """Runs a Powerhose cluster.
 
     Options:
@@ -32,7 +35,9 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     - **background**: If True, the cluster is run in the background.
       Defaults to False.
     - **worker_params**: a dict of params to pass to the worker. Default is
-      None.
+      None
+    - **timeout** the maximum time allowed before the thread stacks is dumped
+      and the job result not sent back.
     """
     from circus import get_arbiter
     from circus.stream import StdoutStream, FileStream
@@ -51,7 +56,7 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
 
     worker_cmd = [python, '-m', 'powerhose.worker', target, '--logfile',
                   logfile, debug, '--backend', backend, '--heartbeat',
-                  heartbeat]
+                  heartbeat, '--timeout', str(timeout)]
 
     if worker_params:
         worker_cmd += ['--params', params]

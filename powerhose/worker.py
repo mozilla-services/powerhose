@@ -8,6 +8,9 @@ import sys
 import traceback
 import argparse
 import logging
+import threading
+import Queue
+import contextlib
 
 import zmq
 
@@ -17,8 +20,83 @@ from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
 from powerhose.job import Job
 from powerhose.util import resolve_name, decode_params, timed
 from powerhose.heartbeat import Stethoscope
+from powerhose.client import DEFAULT_TIMEOUT_MOVF
 
 from zmq.eventloop import ioloop, zmqstream
+
+
+class ExecutionTimer(threading.Thread):
+
+    def __init__(self, timeout=DEFAULT_TIMEOUT_MOVF, interval=.1):
+        logger.debug('Initializing the execution timer. timeout is %.2f' \
+                % timeout)
+        threading.Thread.__init__(self)
+        self.armed = self.running = False
+        self.timeout = timeout
+        self.daemon = True
+
+        # creating a queue for I/O with the worker
+        self.queue = Queue.Queue()
+        self.interval = interval
+        self.timed_out = self.working = False
+        self.last_dump = None
+
+    @contextlib.contextmanager
+    def run_job(self):
+        self.job_starts()
+        try:
+            yield
+        finally:
+            self.job_ends()
+
+    def job_starts(self):
+        if self.working:
+            raise ValueError("The worker is already busy -- call job_ends")
+        self.working = True
+        self.timed_out = False
+        self.queue.put('STARTING')
+
+    def job_ends(self):
+        if not self.working:
+            raise ValueError("The worker is not busy -- call job_starts")
+        self.queue.put('DONE')
+        self.working = self.armed = False
+
+    def run(self):
+        self.running = True
+
+        while self.running:
+            # arming, so waiting for ever
+            self.queue.get()
+            self.armed = True
+
+            # now waiting for the second call, which means
+            # the worker has done the work.
+            #
+            # This time we time out
+            try:
+                self.queue.get(timeout=self.timeout)
+            except Queue.Empty:
+                # too late, we want to log the stack
+                self.last_dump = []
+                threads = dict([(th.ident, th.name)
+                                 for th in threading.enumerate()])
+
+                for thread, frame in sys._current_frames().items():
+                    self.last_dump.append('Thread 0x%x (%s)' %
+                                    (thread, threads[thread]))
+                    self.last_dump.append(''.join(
+                        traceback.format_stack(frame)))
+                self.timed_out = True
+            finally:
+                self.armed = False
+
+    def stop(self):
+        self.running = False
+        if not self.armed:
+            self.queue.put('STARTING')
+        self.queue.put('DONE')
+        self.join()
 
 
 class Worker(object):
@@ -35,10 +113,12 @@ class Worker(object):
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
     - **params** a dict containing the params to set for this worker.
+    - **timeout** the maximum time allowed before the thread stacks is dump
+      and the job result not sent back.
     """
     def __init__(self, target, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3,
-                 params=None):
+                 params=None, timeout=DEFAULT_TIMEOUT_MOVF):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.backend = backend
@@ -54,6 +134,7 @@ class Worker(object):
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
+        self.timer = ExecutionTimer(timeout=timeout)
 
     def _handle_recv_back(self, msg):
         # do the job and send the result
@@ -67,7 +148,15 @@ class Worker(object):
 
         # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
-            res = target(Job.load_from_string(msg[0]))
+            with self.timer.run_job():
+                res = target(Job.load_from_string(msg[0]))
+
+            # did we timout ?
+            if self.timer.timed_out:
+                # let's dump the last
+                for line in self.timer.last_dump:
+                    logger.error(line)
+
             if self.debug:
                 duration, res = res
             res = '%d:OK:%s' % (self.pid, res)
@@ -77,6 +166,11 @@ class Worker(object):
             exc.insert(0, str(e))
             res = '%d:ERROR:%s' % (self.pid, '\n'.join(exc))
             logger.error(res)
+
+        if self.timer.timed_out:
+            # let's not send back anything, we know the client
+            # is gone anyway
+            return
 
         if self.debug:
             logger.debug('%.6f' % duration)
@@ -97,6 +191,7 @@ class Worker(object):
         """
         logger.debug('Stopping the worker')
         self.ping.stop()
+        self.timer.stop()
         self.loop.stop()
         self.running = False
         time.sleep(.1)
@@ -112,6 +207,7 @@ class Worker(object):
 
         # running the pinger
         self.ping.start()
+        self.timer.start()
         self.running = True
 
         while self.running:
@@ -157,6 +253,12 @@ def main(args=sys.argv):
     parser.add_argument('--params', dest='params', default=None,
                         help='The parameters to be used in the worker.')
 
+    parser.add_argument('--timeout', dest='timeout', type=float,
+                        default=DEFAULT_TIMEOUT_MOVF,
+                        help=('The maximum time allowed before the thread '
+                              'stacks is dump and the job result not sent '
+                              'back.'))
+
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
@@ -169,7 +271,7 @@ def main(args=sys.argv):
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
     worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat,
-                    params=params)
+                    params=params, timeout=args.timeout)
 
     try:
         worker.start()

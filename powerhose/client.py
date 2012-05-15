@@ -14,15 +14,22 @@ from powerhose.util import (send, recv, DEFAULT_FRONTEND, logger,
                             extract_result, timed)
 
 
+DEFAULT_TIMEOUT = 5.
+DEFAULT_TIMEOUT_MOVF = 7.5
+DEFAULT_TIMEOUT_OVF = 1
+
+
 class Client(object):
     """Class to call a Powerhose cluster.
 
+    p
     Options:
 
     - **frontend**: ZMQ socket to call.
     - **timeout**: maximum allowed time for a job to run.
-      Defaults to 5s.
-    - **timeout_max_overflow**: maximum timeout overflow allowed
+      Defaults to 1s.
+    - **timeout_max_overflow**: maximum timeout overflow allowed.
+      Defaults to 1.5s
     - **timeout_overflows**: number of times in a row the timeout value
       can be overflowed per worker. The client keeps a counter of
       executions that were longer than the regular timeout but shorter
@@ -30,8 +37,9 @@ class Client(object):
       **timeout_overflows**, the usual TimeoutError is raised.
       When a worker returns on time, the counter is reset.
     """
-    def __init__(self, frontend=DEFAULT_FRONTEND, timeout=1.,
-                 timeout_max_overflow=1.5, timeout_overflows=1,
+    def __init__(self, frontend=DEFAULT_FRONTEND, timeout=DEFAULT_TIMEOUT,
+                 timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
+                 timeout_overflows=DEFAULT_TIMEOUT_OVF,
                  iothreads=5, debug=False):
         self.ctx = zmq.Context(io_threads=iothreads)
         self.master = self.ctx.socket(zmq.REQ)
@@ -78,7 +86,7 @@ class Client(object):
                 # XXX well, we have the result but we want to timeout
                 # nevertheless because that's been too much overflow
                 if self.timeout_counters[worker_pid] > self.timeout_overflows:
-                    raise TimeoutError()
+                    raise TimeoutError(timeout / 1000)
             else:
                 self.timeout_counters[worker_pid] = 0
 
@@ -112,7 +120,7 @@ class Client(object):
         if socks.get(self.master) == zmq.POLLIN:
             return extract_result(recv(self.master))
 
-        raise TimeoutError()
+        raise TimeoutError(timeout / 1000)
 
 
 class Pool(object):
@@ -133,8 +141,10 @@ class Pool(object):
       **timeout_overflows**, the usual TimeoutError is raised.
       When a worker returns on time, the counter is reset.
     """
-    def __init__(self, size=10, frontend=DEFAULT_FRONTEND, timeout=4.,
-                 timeout_max_overflow=5., timeout_overflows=1):
+    def __init__(self, size=10, frontend=DEFAULT_FRONTEND,
+                 timeout=DEFAULT_TIMEOUT,
+                 timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
+                 timeout_overflows=DEFAULT_TIMEOUT_OVF):
         self._connectors = Queue()
         self.frontend = frontend
         self.timeout = timeout

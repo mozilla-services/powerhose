@@ -3,10 +3,14 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import time
 import sys
+from powerhose.util import logger, set_logger
+
+set_logger(True, logfile='stdout')
 
 
 def _p(msg):
     sys.stdout.write(msg + '\n')
+    logger.debug(msg)
     sys.stdout.flush()
 
 

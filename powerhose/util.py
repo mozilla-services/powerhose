@@ -187,5 +187,8 @@ def get_params():
 
 
 def extract_result(data):
-    pid, result, data = data.split(':', 3)
+    data = data.split(':', 2)
+    if len(data) != 3:
+        raise ValueError("Wrong data: %s" % data)
+    pid, result, data = data
     return long(pid), result == 'OK', data
