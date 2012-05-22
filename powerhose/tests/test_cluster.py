@@ -109,3 +109,20 @@ class TestCluster(unittest.TestCase):
 
         # the worker should be blocked on the sleep
         self.assertTrue('time.sleep(float(job.data))' in res)
+
+    def test_worker_max_age(self):
+        # a worker with a max age of 2 + 1
+        client = self._get_cluster('powerhose.tests.jobs.success',
+                                   max_age=1.5, max_age_delta=0)
+        self.assertEqual(client.execute('xx'), 'xx')
+
+        cl = self.clusters[-1]
+
+        # get the pid of the current worker
+        pid = cl.watchers[1].pids.keys()[0]
+
+        # wait 3 seconds
+        time.sleep(3.)
+
+        # should be different
+        self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])

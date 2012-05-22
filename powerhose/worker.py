@@ -11,6 +11,7 @@ import logging
 import threading
 import Queue
 import contextlib
+import random
 
 import zmq
 
@@ -23,6 +24,10 @@ from powerhose.heartbeat import Stethoscope
 from powerhose.client import DEFAULT_TIMEOUT_MOVF
 
 from zmq.eventloop import ioloop, zmqstream
+
+
+DEFAULT_MAX_AGE = -1
+DEFAULT_MAX_AGE_DELTA = 0
 
 
 class ExecutionTimer(threading.Thread):
@@ -115,10 +120,18 @@ class Worker(object):
     - **params** a dict containing the params to set for this worker.
     - **timeout** the maximum time allowed before the thread stacks is dump
       and the job result not sent back.
+    - **max_age**: maximum age for a worker in seconds. After that delay,
+      the worker will simply quit. When set to -1, never quits.
+      Defaults to -1.
+    - **max_age_delta**: maximum value in seconds added to max age.
+      The Worker will quit after *max_age + random(0, max_age_delta)*
+      This is done to avoid having all workers quit at the same instant.
+      Defaults to 0. The value must be an integer.
     """
     def __init__(self, target, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3,
-                 params=None, timeout=DEFAULT_TIMEOUT_MOVF):
+                 params=None, timeout=DEFAULT_TIMEOUT_MOVF,
+                 max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.backend = backend
@@ -135,6 +148,9 @@ class Worker(object):
         self.params = params
         self.pid = os.getpid()
         self.timer = ExecutionTimer(timeout=timeout)
+        self.max_age = max_age
+        self.max_age_delta = max_age_delta
+        self.delayed_exit = None
 
     def _handle_recv_back(self, msg):
         # do the job and send the result
@@ -210,6 +226,19 @@ class Worker(object):
         self.timer.start()
         self.running = True
 
+        # arming the exit callback
+        if self.max_age != -1:
+            if self.max_age_delta > 0:
+                delta = random.randint(0, self.max_age_delta)
+            else:
+                delta = 0
+
+            cb_time = self.max_age + delta
+            self.delayed_exit = ioloop.DelayedCallback(self.stop,
+                                                       cb_time * 1000,
+                                                       io_loop=self.loop)
+            self.delayed_exit.start()
+
         while self.running:
             try:
                 self.loop.start()
@@ -259,6 +288,16 @@ def main(args=sys.argv):
                               'stacks is dump and the job result not sent '
                               'back.'))
 
+    parser.add_argument('--max-age', dest='max_age', type=float,
+                        default=DEFAULT_MAX_AGE,
+                        help=('The maximum age for a worker in seconds. '
+                              'After that delay, the worker will simply quit. '
+                              'When set to -1, never quits.'))
+
+    parser.add_argument('--max-age-delta', dest='max_age_delta', type=int,
+                        default=DEFAULT_MAX_AGE_DELTA,
+                        help='The maximum value in seconds added to max_age')
+
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
@@ -271,7 +310,8 @@ def main(args=sys.argv):
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
     worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat,
-                    params=params, timeout=args.timeout)
+                    params=params, timeout=args.timeout, max_age=args.max_age,
+                    max_age_delta=args.max_age_delta)
 
     try:
         worker.start()

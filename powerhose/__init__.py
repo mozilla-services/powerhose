@@ -9,6 +9,7 @@ import time
 from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_FRONTEND, encode_params, get_params)
 from powerhose.client import DEFAULT_TIMEOUT_MOVF
+from powerhose.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
 
 
 __all__ = ('get_cluster', 'get_params')
@@ -18,7 +19,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
                 working_dir='.', logfile='stdout',
                 debug=False, background=False, worker_params=None,
-                timeout=DEFAULT_TIMEOUT_MOVF):
+                timeout=DEFAULT_TIMEOUT_MOVF, max_age=DEFAULT_MAX_AGE,
+                max_age_delta=DEFAULT_MAX_AGE_DELTA):
     """Runs a Powerhose cluster.
 
     Options:
@@ -38,6 +40,12 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
       None
     - **timeout** the maximum time allowed before the thread stacks is dumped
       and the job result not sent back.
+    - **max_age**: maximum age for a worker in seconds. After that delay,
+      the worker will simply quit. When set to -1, never quits.
+      Defaults to -1.
+    - **max_age_delta**: maximum value in seconds added to max age.
+      The Worker will quit after *max_age + random(0, max_age_delta)*
+      This is done to avoid having all workers quit at the same instant.
     """
     from circus import get_arbiter
     from circus.stream import StdoutStream, FileStream
@@ -56,7 +64,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
 
     worker_cmd = [python, '-m', 'powerhose.worker', target, '--logfile',
                   logfile, debug, '--backend', backend, '--heartbeat',
-                  heartbeat, '--timeout', str(timeout)]
+                  heartbeat, '--timeout', str(timeout), '--max-age',
+                  str(max_age), '--max-age-delta', str(max_age_delta)]
 
     if worker_params:
         worker_cmd += ['--params', params]
