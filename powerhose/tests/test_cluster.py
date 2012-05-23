@@ -154,7 +154,7 @@ class TestCluster(unittest.TestCase):
             raise
 
         # give time to Circus to restart the new process
-        time.sleep(3.)
+        time.sleep(1.)
 
         # should be different
         try:

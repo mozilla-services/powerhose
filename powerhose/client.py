@@ -22,7 +22,6 @@ DEFAULT_TIMEOUT_OVF = 1
 class Client(object):
     """Class to call a Powerhose cluster.
 
-    p
     Options:
 
     - **frontend**: ZMQ socket to call.

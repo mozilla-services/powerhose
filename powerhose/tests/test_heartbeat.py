@@ -23,34 +23,32 @@ class TestHeartbeat(unittest.TestCase):
         time.sleep(.2)
 
         stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=onbeat,
-                    onbeatlost=onbeatlost,
-                    delay=0.1)
+                             onbeatlost=onbeatlost, delay=1., retries=5.)
         stetho.start()
 
         time.sleep(5.)
 
         stetho.stop()
         hb.stop()
-        self.assertTrue(len(beats) > 10)
-        self.assertEqual(len(lost),  0)
+        self.assertEqual(len(lost),  0, len(lost))
+        self.assertTrue(len(beats) > 10, len(beats))
 
     def test_lost(self):
         beats = []
         lost = []
 
-        def onbeat():
+        def _onbeat():
             beats.append('.')
 
-        def onbeatlost():
+        def _onbeatlost():
             lost.append('.')
 
         hb = Heartbeat('ipc:///tmp/stetho.ipc', interval=0.1)
         hb.start()
         time.sleep(.2)
 
-        stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=onbeat,
-                    onbeatlost=onbeatlost,
-                    delay=0.1)
+        stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=_onbeat,
+                    onbeatlost=_onbeatlost, delay=0.1)
         stetho.start()
 
         time.sleep(2.)

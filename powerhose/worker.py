@@ -101,7 +101,8 @@ class ExecutionTimer(threading.Thread):
         if not self.armed:
             self.queue.put('STARTING')
         self.queue.put('DONE')
-        self.join()
+        if self.isAlive():
+            self.join()
 
 
 class Worker(object):

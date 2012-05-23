@@ -49,7 +49,7 @@ class Broker(object):
         self._backstream.on_recv(self._handle_recv_back)
 
         # heartbeat
-        self.pong = Heartbeat(heartbeat)
+        self.pong = Heartbeat(heartbeat, io_loop=self.loop)
 
         # status
         self.started = False
@@ -112,9 +112,14 @@ class Broker(object):
         """
         if not self.started:
             return
-        self.loop.stop()
+
+        self._backstream.flush()
+        logger.debug('Stopping the heartbeat')
         self.pong.stop()
+        logger.debug('Stopping the loop')
+        self.loop.stop()
         self.started = False
+        self.context.destroy(0)
 
 
 def main(args=sys.argv):
