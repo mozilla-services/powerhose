@@ -126,3 +126,40 @@ class TestCluster(unittest.TestCase):
 
         # should be different
         self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])
+
+    def test_worker_max_age2(self):
+
+        # we want to run a job, and have the max age reached while the job
+        # is being executed, to verify that the job returns before the
+        # worker is killed.
+        client.DEFAULT_TIMEOUT = 5.
+        client.DEFAULT_TIMEOUT_MOVF = 7.
+        file = self._get_file()
+        _client = self._get_cluster('powerhose.tests.jobs.timeout_overflow',
+                                    max_age=1., max_age_delta=0,
+                                    logfile=file)
+
+        time.sleep(.2)
+        cl = self.clusters[-1]
+
+        # get the pid of the current worker
+        pid = cl.watchers[1].pids.keys()[0]
+
+        # work for 3 seconds
+        try:
+            self.assertEqual(_client.execute('2.0'), 'xx')
+        except Exception:
+            with open(file) as f:
+                print(f.read())
+            raise
+
+        # give time to Circus to restart the new process
+        time.sleep(3.)
+
+        # should be different
+        try:
+            self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])
+        except Exception:
+            with open(file) as f:
+                print(f.read())
+            raise

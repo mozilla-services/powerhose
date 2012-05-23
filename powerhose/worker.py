@@ -151,6 +151,7 @@ class Worker(object):
         self.max_age = max_age
         self.max_age_delta = max_age_delta
         self.delayed_exit = None
+        self.lock = threading.RLock()
 
     def _handle_recv_back(self, msg):
         # do the job and send the result
@@ -189,7 +190,7 @@ class Worker(object):
             return
 
         if self.debug:
-            logger.debug('%.6f' % duration)
+            logger.debug('Duration - %.6f' % duration)
 
         try:
             self._backstream.send(res)
@@ -206,10 +207,11 @@ class Worker(object):
         """Stops the worker.
         """
         logger.debug('Stopping the worker')
+        self.running = False
+        self._backstream.flush()
+        self.loop.stop()
         self.ping.stop()
         self.timer.stop()
-        self.loop.stop()
-        self.running = False
         time.sleep(.1)
         self.ctx.destroy(0)
         logger.debug('Worker is stopped')
