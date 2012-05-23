@@ -209,7 +209,10 @@ class Worker(object):
         """
         logger.debug('Stopping the worker')
         self.running = False
-        self._backstream.flush()
+        try:
+            self._backstream.flush()
+        except zmq.core.error.ZMQError:
+            pass
         self.loop.stop()
         self.ping.stop()
         self.timer.stop()
