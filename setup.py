@@ -17,7 +17,7 @@ requires = ['pyzmq', 'circus']
 
 
 setup(name='powerhose',
-      version='0.3',
+      version='0.4',
       packages=find_packages(),
       include_package_data=True,
       description='Implementation of the Request-Reply Broken pattern in ZMQ',
