@@ -105,7 +105,10 @@ class Stethoscope(threading.Thread):
         if self._stop_loop:
             self.loop.stop()
         if self.isAlive():
-            self.join()
+            try:
+                self.join()
+            except RuntimeError:
+                pass
 
 
 class Heartbeat(object):

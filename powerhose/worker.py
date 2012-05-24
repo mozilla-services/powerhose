@@ -19,7 +19,7 @@ from powerhose import util
 from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
                             DEFAULT_HEARTBEAT)
 from powerhose.job import Job
-from powerhose.util import resolve_name, decode_params, timed
+from powerhose.util import resolve_name, decode_params, timed, dump_stacks
 from powerhose.heartbeat import Stethoscope
 from powerhose.client import DEFAULT_TIMEOUT_MOVF
 
@@ -83,15 +83,7 @@ class ExecutionTimer(threading.Thread):
                 self.queue.get(timeout=self.timeout)
             except Queue.Empty:
                 # too late, we want to log the stack
-                self.last_dump = []
-                threads = dict([(th.ident, th.name)
-                                 for th in threading.enumerate()])
-
-                for thread, frame in sys._current_frames().items():
-                    self.last_dump.append('Thread 0x%x (%s)' %
-                                    (thread, threads[thread]))
-                    self.last_dump.append(''.join(
-                        traceback.format_stack(frame)))
+                self.last_dump = dump_stacks()
                 self.timed_out = True
             finally:
                 self.armed = False

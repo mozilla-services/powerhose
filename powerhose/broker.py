@@ -37,6 +37,7 @@ class Broker(object):
 
         # setting up the two sockets
         self._frontend = self.context.socket(zmq.ROUTER)
+        self._frontend.identity = 'broker-' + frontend
         self._frontend.bind(frontend)
         self._backend = self.context.socket(zmq.DEALER)
         self._backend.bind(backend)

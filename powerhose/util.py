@@ -8,6 +8,9 @@ import zmq
 import logging
 import logging.handlers
 import sys
+import gc
+import traceback
+import threading
 
 from powerhose.exc import TimeoutError
 
@@ -192,3 +195,34 @@ def extract_result(data):
         raise ValueError("Wrong data: %s" % data)
     pid, result, data = data
     return long(pid), result == 'OK', data
+
+
+def dump_stacks():
+    dump = []
+
+    # threads
+    threads = dict([(th.ident, th.name)
+                        for th in threading.enumerate()])
+
+    for thread, frame in sys._current_frames().items():
+        dump.append('Thread 0x%x (%s)\n' % (thread, threads[thread]))
+        dump.append(''.join(traceback.format_stack(frame)))
+        dump.append('\n')
+
+    # greenlets
+    try:
+        from greenlet import greenlet
+    except ImportError:
+        return dump
+
+    # if greenlet is present, let's dump each greenlet stack
+    for ob in gc.get_objects():
+        if not isinstance(ob, greenlet):
+            continue
+        if not ob:
+            continue   # not running anymore or not started
+        dump.append('Greenlet\n')
+        dump.append(''.join(traceback.format_stack(ob.gr_frame)))
+        dump.append('\n')
+
+    return dump
