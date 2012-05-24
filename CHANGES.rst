@@ -1,11 +1,12 @@
 CHANGES
 =======
 
-0.3 - ?
--------
+0.3 - 2012-05-24
+----------------
 
 - implemented timeout_max_overflow in the client.
-
+- the stacks are dumped on worker timeouts
+- now using delayed callbacks for the heartbeat
 
 0.2 - 2012-04-17
 ----------------
