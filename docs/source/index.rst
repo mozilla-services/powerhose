@@ -36,7 +36,6 @@ pattern in ZMQ.
      Broker <-> Worker1, Worker2, Worker3 [label="back"];
    }
 
-
 The three main parts are:
 
 1. a client that connects to a broker to send some jobs.
