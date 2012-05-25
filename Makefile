@@ -6,7 +6,7 @@ LIBDIR = -L$(DIR) -L/opt/local/lib
 OPTS = -g -Wall -Wextra 
 LIBS = -lpthread -lzmq -lprotobuf
 
-.phony: all build buildex proto
+.PHONY: docs all build buildex proto
 
 
 all:
@@ -28,4 +28,5 @@ test: bin/nosetests
 coverage: bin/coverage
 	bin/nosetests --with-coverage --cover-html --cover-html-dir=html --cover-package=powerhose
 
-
+docs: bin/sphinx-build
+	SPHINXBUILD=../bin/sphinx-build $(MAKE) -C docs html $^

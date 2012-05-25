@@ -104,7 +104,7 @@ Client
 ======
 
 .. autoclass:: powerhose.client.Client
-   :members: execute
+   :members: execute, ping
 
 
 Client Pool
