@@ -16,6 +16,7 @@ from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
                             DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger,
                             verify_broker)
 from powerhose.heartbeat import Heartbeat
+from powerhose.util import verify_broker
 from powerhose.exc import DuplicateBrokerError
 
 
@@ -159,12 +160,24 @@ def main(args=sys.argv):
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
 
+    parser.add_argument('--check', action='store_true', default=False,
+                        help=("Use this option to check if there's a running "
+                              " broker. Returns the PID if a broker is up."))
+
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to .")
 
     args = parser.parse_args()
-
     set_logger(args.debug, logfile=args.logfile)
+
+    if args.check:
+        pid = verify_broker(args.frontend)
+        if pid is None:
+            logger.info('There seem to be no broker on this endpoint')
+        else:
+            logger.info('A broker is running. PID: %s' % pid)
+        return 0
+
     logger.info('Starting the broker')
     try:
         broker = Broker(frontend=args.frontend, backend=args.backend,
@@ -172,7 +185,7 @@ def main(args=sys.argv):
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')
-        sys.exit(0)
+        return 1
 
     logger.info('Listening to incoming jobs at %r' % args.frontend)
     logger.info('Workers may register at %r' % args.backend)
@@ -184,6 +197,8 @@ def main(args=sys.argv):
     finally:
         broker.stop()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
