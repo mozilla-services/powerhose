@@ -1,9 +1,13 @@
 CHANGES
 =======
 
-0.4
+0.4 ?
+---
 
-??
+- the broker exits if there's already a valid broker running
+  in the socket.
+- powerhose-broker gained 2 new options: --check and --purge-ghosts
+
 
 0.3 - 2012-05-24
 ----------------
