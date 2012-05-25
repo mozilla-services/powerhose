@@ -55,6 +55,7 @@ class TestCluster(unittest.TestCase):
                          numprocesses=1, background=True, debug=True,
                          timeout=client.DEFAULT_TIMEOUT_MOVF, **kw)
         cl.start()
+        time.sleep(1.)  # stabilization
         self.clusters.append(cl)
         logger.debug('cluster ready')
         return client.Client(front, debug=True, timeout=client.DEFAULT_TIMEOUT,
@@ -78,6 +79,9 @@ class TestCluster(unittest.TestCase):
         file = self._get_file()
         client = self._get_cluster('powerhose.tests.jobs.timeout_overflow',
                                    logfile=file)
+
+        # trying a PING
+        self.assertTrue(client.ping() is not None)
 
         try:
             self.assertEqual(client.execute(self.overflow), 'xx')
@@ -111,7 +115,7 @@ class TestCluster(unittest.TestCase):
         self.assertTrue('time.sleep(float(job.data))' in res)
 
     def test_worker_max_age(self):
-        # a worker with a max age of 2 + 1
+        # a worker with a max age of 1.5
         client = self._get_cluster('powerhose.tests.jobs.success',
                                    max_age=1.5, max_age_delta=0)
         self.assertEqual(client.execute('xx'), 'xx')
@@ -122,7 +126,7 @@ class TestCluster(unittest.TestCase):
         pid = cl.watchers[1].pids.keys()[0]
 
         # wait 3 seconds
-        time.sleep(3.)
+        time.sleep(2.)
 
         # should be different
         self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])

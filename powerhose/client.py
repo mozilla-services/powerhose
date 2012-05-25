@@ -98,6 +98,35 @@ class Client(object):
 
         return data
 
+    def ping(self, timeout=1.):
+        """Can be used to simply ping the broker to make sure
+        it's responsive.
+
+
+        Returns the broker PID"""
+        with self.lock:
+            send(self.master, 'PING')
+            while True:
+                try:
+                    socks = dict(self.poller.poll(timeout * 1000))
+                    break
+                except zmq.ZMQError as e:
+                    if e.errno != errno.EINTR:
+                        return None
+
+        if socks.get(self.master) == zmq.POLLIN:
+            res = recv(self.master)
+            try:
+                res = int(res)
+            except TypeError:
+                pass
+            return res
+
+        return None
+
+    def close(self):
+        self.ctx.destroy(0)
+
     def _execute(self, job, timeout=None):
         if isinstance(job, str):
             job = Job(job)

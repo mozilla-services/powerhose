@@ -7,13 +7,16 @@ import errno
 import sys
 import traceback
 import argparse
+import os
 
 from zmq.eventloop import ioloop, zmqstream
 import zmq
 
 from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
-                            DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger)
+                            DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger,
+                            verify_broker)
 from powerhose.heartbeat import Heartbeat
+from powerhose.exc import DuplicateBrokerError
 
 
 class Broker(object):
@@ -27,6 +30,14 @@ class Broker(object):
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT):
+        # before doing anything, we verify if a broker is already up and
+        # running
+        logger.debug('Verifying if there is a running broker')
+        pid = verify_broker(frontend)
+        if pid is not None:    # oops. can't do this !
+            logger.debug('Ooops, we have a running broker on that socket')
+            raise DuplicateBrokerError(pid)
+
         logger.debug('Initializing the broker.')
 
         for endpoint in (frontend, backend, heartbeat):
@@ -59,6 +70,13 @@ class Broker(object):
     def _handle_recv_front(self, msg):
         # front => back
         logger.debug('front -> back')
+
+        # if the last part of the message is 'PING', we just PONG back
+        # this is used as a health check
+        if msg[-1] == 'PING':
+            self._frontstream.send_multipart(msg[:-1] + [str(os.getpid())])
+            return
+
         try:
             self._backstream.send_multipart(msg)
         except Exception, e:
@@ -148,8 +166,14 @@ def main(args=sys.argv):
 
     set_logger(args.debug, logfile=args.logfile)
     logger.info('Starting the broker')
-    broker = Broker(frontend=args.frontend, backend=args.backend,
-                    heartbeat=args.heartbeat)
+    try:
+        broker = Broker(frontend=args.frontend, backend=args.backend,
+                        heartbeat=args.heartbeat)
+    except DuplicateBrokerError, e:
+        logger.info('There is already a broker running on PID %s' % e)
+        logger.info('Exiting')
+        sys.exit(0)
+
     logger.info('Listening to incoming jobs at %r' % args.frontend)
     logger.info('Workers may register at %r' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)

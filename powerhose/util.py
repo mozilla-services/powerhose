@@ -226,3 +226,14 @@ def dump_stacks():
         dump.append('\n')
 
     return dump
+
+
+def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
+    """ Return True if there's a working broker bound at broker_endpoint
+    """
+    from powerhose.client import Client
+    client = Client(broker_endpoint)
+    try:
+        return client.ping(timeout)
+    finally:
+        client.close()

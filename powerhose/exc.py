@@ -9,3 +9,7 @@ class TimeoutError(Exception):
 
 class ExecutionError(Exception):
     pass
+
+
+class DuplicateBrokerError(Exception):
+    pass
