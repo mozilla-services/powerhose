@@ -1,8 +1,8 @@
 CHANGES
 =======
 
-0.4 ?
----
+0.4 - 2012-05-25
+----------------
 
 - the broker exits if there's already a valid broker running
   in the socket.
