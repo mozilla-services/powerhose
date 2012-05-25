@@ -14,9 +14,8 @@ import zmq
 
 from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
                             DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger,
-                            verify_broker)
+                            verify_broker, kill_ghost_brokers)
 from powerhose.heartbeat import Heartbeat
-from powerhose.util import verify_broker
 from powerhose.exc import DuplicateBrokerError
 
 
@@ -34,10 +33,10 @@ class Broker(object):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
-        pid = verify_broker(frontend)
-        if pid is not None:    # oops. can't do this !
-            logger.debug('Ooops, we have a running broker on that socket')
-            raise DuplicateBrokerError(pid)
+        #pid = verify_broker(frontend)
+        #if pid is not None:    # oops. can't do this !
+        #    logger.debug('Ooops, we have a running broker on that socket')
+        #    raise DuplicateBrokerError(pid)
 
         logger.debug('Initializing the broker.')
 
@@ -164,11 +163,28 @@ def main(args=sys.argv):
                         help=("Use this option to check if there's a running "
                               " broker. Returns the PID if a broker is up."))
 
+    parser.add_argument('--purge-ghosts', action='store_true', default=False,
+                        help="Use this option to purge ghost brokers.")
+
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to .")
 
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
+
+    if args.purge_ghosts:
+        broker_pids, ghosts = kill_ghost_brokers(args.frontend)
+        if broker_pids is None:
+            logger.info('No running broker.')
+        else:
+            logger.info('The active broker runs at PID: %s' % broker_pids)
+
+        if len(ghosts) == 0:
+            logger.info('No ghosts where killed.')
+        else:
+            logger.info('Ghost(s) killed: %s' \
+                    % ', '.join([str(g) for g in ghosts]))
+        return 0
 
     if args.check:
         pid = verify_broker(args.frontend)
