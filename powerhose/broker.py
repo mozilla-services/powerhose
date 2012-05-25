@@ -33,10 +33,10 @@ class Broker(object):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
-        #pid = verify_broker(frontend)
-        #if pid is not None:    # oops. can't do this !
-        #    logger.debug('Ooops, we have a running broker on that socket')
-        #    raise DuplicateBrokerError(pid)
+        pid = verify_broker(frontend)
+        if pid is not None:    # oops. can't do this !
+            logger.debug('Ooops, we have a running broker on that socket')
+            raise DuplicateBrokerError(pid)
 
         logger.debug('Initializing the broker.')
 
