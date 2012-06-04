@@ -27,12 +27,12 @@ class Stethoscope(threading.Thread):
     """
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=3.,
                  retries=3,
-                 onbeatlost=None, onbeat=None, io_loop=None):
+                 onbeatlost=None, onbeat=None, io_loop=None, ctx=None):
         threading.Thread.__init__(self)
         self.loop = io_loop or ioloop.IOLoop.instance()
         self._stop_loop = io_loop is None
         self.daemon = True
-        self.context = zmq.Context()
+        self.context = ctx or zmq.Context()
         self.endpoint = endpoint
         self.running = False
         self.delay = delay
@@ -122,10 +122,11 @@ class Heartbeat(object):
     - **interval** : Interval between two beat.
     """
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=2.,
-                 io_loop=None):
+                 io_loop=None, ctx=None):
         self.loop = io_loop or ioloop.IOLoop.instance()
         self.daemon = True
-        self.context = zmq.Context()
+        self.kill_context = ctx is None
+        self.context = ctx or zmq.Context()
         self.endpoint = endpoint
         self.running = False
         self.interval = interval
@@ -151,4 +152,5 @@ class Heartbeat(object):
         """Stops the Pong service"""
         self.running = False
         self._cb.stop()
-        self.context.destroy(0)
+        if self.kill_context:
+            self.context.destroy(0)

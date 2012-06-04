@@ -19,6 +19,9 @@ from powerhose.heartbeat import Heartbeat
 from powerhose.exc import DuplicateBrokerError
 
 
+DEFAULT_IOTHREADS = 1
+
+
 class Broker(object):
     """Class that route jobs to workers.
 
@@ -29,7 +32,7 @@ class Broker(object):
     - **heartbeat**: the ZMQ socket to receive heartbeat requests/
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT):
+                 heartbeat=DEFAULT_HEARTBEAT, io_threads=DEFAULT_IOTHREADS):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -44,7 +47,7 @@ class Broker(object):
             if endpoint.startswith('ipc'):
                 register_ipc_file(endpoint)
 
-        self.context = zmq.Context()
+        self.context = zmq.Context(io_threads=io_threads)
 
         # setting up the two sockets
         self._frontend = self.context.socket(zmq.ROUTER)
@@ -61,7 +64,7 @@ class Broker(object):
         self._backstream.on_recv(self._handle_recv_back)
 
         # heartbeat
-        self.pong = Heartbeat(heartbeat, io_loop=self.loop)
+        self.pong = Heartbeat(heartbeat, io_loop=self.loop, ctx=self.context)
 
         # status
         self.started = False
@@ -156,6 +159,10 @@ def main(args=sys.argv):
                         default=DEFAULT_HEARTBEAT,
                         help="ZMQ socket for the heartbeat.")
 
+    parser.add_argument('--io-threads', type=int,
+                        default=DEFAULT_IOTHREADS,
+                        help="Number of I/O threads")
+
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
 
@@ -197,7 +204,7 @@ def main(args=sys.argv):
     logger.info('Starting the broker')
     try:
         broker = Broker(frontend=args.frontend, backend=args.backend,
-                        heartbeat=args.heartbeat)
+                        heartbeat=args.heartbeat, io_threads=args.io_threads)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')
