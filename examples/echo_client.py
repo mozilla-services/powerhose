@@ -23,3 +23,4 @@ for i in range(2000):
     sys.stdout.flush()
 
 print 'Done in %.2f' % (time.time() - start)
+import pdb; pdb.set_trace()

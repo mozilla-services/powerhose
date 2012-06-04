@@ -5,6 +5,7 @@ import threading
 from Queue import Queue
 from collections import defaultdict
 import errno
+import contextlib
 
 import zmq
 
@@ -39,8 +40,9 @@ class Client(object):
     def __init__(self, frontend=DEFAULT_FRONTEND, timeout=DEFAULT_TIMEOUT,
                  timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
                  timeout_overflows=DEFAULT_TIMEOUT_OVF,
-                 iothreads=5, debug=False):
-        self.ctx = zmq.Context(io_threads=iothreads)
+                 debug=False, ctx=None):
+        self.kill_ctx = ctx is None
+        self.ctx = ctx or zmq.Context()
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
         logger.debug('Client connected to %s' % frontend)
@@ -125,7 +127,10 @@ class Client(object):
         return None
 
     def close(self):
-        self.ctx.destroy(0)
+        #self.master.close()
+
+        if self.kill_ctx:
+            self.ctx.destroy(0)
 
     def _execute(self, job, timeout=None):
         if isinstance(job, str):
@@ -172,29 +177,46 @@ class Pool(object):
     def __init__(self, size=10, frontend=DEFAULT_FRONTEND,
                  timeout=DEFAULT_TIMEOUT,
                  timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
-                 timeout_overflows=DEFAULT_TIMEOUT_OVF):
+                 timeout_overflows=DEFAULT_TIMEOUT_OVF,
+                 debug=False, ctx=None):
         self._connectors = Queue()
         self.frontend = frontend
         self.timeout = timeout
         self.timeout_overflows = timeout_overflows
         self.timeout_max_overflow = timeout_max_overflow
+        self.debug = debug
+        self.ctx = ctx or zmq.Context()
 
         for i in range(size):
             self._connectors.put(self._create_client())
 
     def _create_client(self):
         return Client(self.frontend, self.timeout,
-                      self.timeout_max_overflow, self.timeout_overflows)
+                      self.timeout_max_overflow, self.timeout_overflows,
+                      debug=self.debug, ctx=self.ctx)
 
-    def execute(self, job, timeout=None):
+    @contextlib.contextmanager
+    def _connector(self, timeout):
         connector = self._connectors.get(timeout=timeout)
         try:
-            res = connector.execute(job, timeout)
+            yield connector
         except Exception:
-            # connector replaced.
-            self._connectors.put(self._create_client())
+            # connector replaced
+            try:
+                connector.close()
+            finally:
+                self._connectors.put(self._create_client())
             raise
         else:
             self._connectors.put(connector)
 
-        return res
+    def execute(self, job, timeout=None):
+        with self._connector(timeout) as connector:
+            return connector.execute(job, timeout)
+
+    def close(self):
+        self.ctx.destroy(0)
+
+    def ping(self, timeout=.1):
+        with self._connector(self.timeout) as connector:
+            return connector.ping(timeout)

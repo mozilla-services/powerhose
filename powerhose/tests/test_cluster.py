@@ -58,7 +58,8 @@ class TestCluster(unittest.TestCase):
         time.sleep(1.)  # stabilization
         self.clusters.append(cl)
         logger.debug('cluster ready')
-        return client.Client(front, debug=True, timeout=client.DEFAULT_TIMEOUT,
+        return client.Pool(size=3, frontend=front, debug=True,
+                timeout=client.DEFAULT_TIMEOUT,
                 timeout_max_overflow=client.DEFAULT_TIMEOUT_MOVF,
                 timeout_overflows=client.DEFAULT_TIMEOUT_OVF)
 
@@ -81,6 +82,7 @@ class TestCluster(unittest.TestCase):
                                    logfile=file)
 
         # trying a PING
+        time.sleep(.2)
         self.assertTrue(client.ping() is not None)
 
         try:
