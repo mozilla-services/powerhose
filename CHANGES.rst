@@ -1,10 +1,12 @@
 CHANGES
 =======
 
-0.5
----
+0.5 - 2012-06-12
+----------------
 
-???
+- drastically reduced the number of used FDs, mainly by
+  reusing the same context when possible
+
 
 0.4 - 2012-05-25
 ----------------
