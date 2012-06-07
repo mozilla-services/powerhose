@@ -32,7 +32,7 @@ setup(name='powerhose',
       author='Mozilla Services',
       author_email='services-dev@mozilla.org',
       url='https://github.com/mozilla-services/powerhose',
-      test_requires=['nose'],
+      tests_require=['nose'],
       test_suite = 'nose.collector',
       entry_points="""
       [console_scripts]
