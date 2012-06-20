@@ -1,8 +1,12 @@
 CHANGES
 =======
 
-0.6
+0.6 - 2012-06-20
+----------------
 
+- introduced a graceful shutdown
+- added a worker registering so restarting workers are not
+  impacting the system
 
 0.5 - 2012-06-12
 ----------------
