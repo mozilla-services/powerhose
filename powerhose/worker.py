@@ -17,7 +17,7 @@ import zmq
 
 from powerhose import util
 from powerhose.util import (logger, set_logger, DEFAULT_BACKEND,
-                            DEFAULT_HEARTBEAT)
+                            DEFAULT_HEARTBEAT, DEFAULT_REG)
 from powerhose.job import Job
 from powerhose.util import resolve_name, decode_params, timed, dump_stacks
 from powerhose.heartbeat import Stethoscope
@@ -107,6 +107,7 @@ class Worker(object):
     - **backend**: The ZMQ socket to connect to the broker.
     - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
       sure it's still alive.
+    - **register** : the ZMQ socket to register workers
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
@@ -122,13 +123,17 @@ class Worker(object):
       Defaults to 0. The value must be an integer.
     """
     def __init__(self, target, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT, ping_delay=1., ping_retries=3,
+                 heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
+                 ping_delay=1., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
         logger.debug('Initializing the worker.')
         self.ctx = zmq.Context()
         self.backend = backend
+        self._reg = self.ctx.socket(zmq.PUSH)
+        self._reg.connect(register)
         self._backend = self.ctx.socket(zmq.REP)
+        self._backend.identity = str(os.getpid())
         self._backend.connect(self.backend)
         self.target = target
         self.running = False
@@ -141,6 +146,7 @@ class Worker(object):
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
+        self.timeout = timeout
         self.timer = ExecutionTimer(timeout=timeout)
         self.max_age = max_age
         self.max_age_delta = max_age_delta
@@ -200,6 +206,23 @@ class Worker(object):
     def stop(self):
         """Stops the worker.
         """
+        if not self.running:
+            return
+
+        # telling the broker we are stopping
+        try:
+            self._reg.send_multipart(['UNREGISTER', str(os.getpid())])
+        except zmq.ZMQError:
+            logger.debug('Could not unregister')
+
+        # give it a chance to finish a job
+        logger.debug('Starting the graceful period')
+        self.graceful_delay = ioloop.DelayedCallback(self._stop,
+                                                     self.timeout * 1000,
+                                                     io_loop=self.loop)
+        self.graceful_delay.start()
+
+    def _stop(self):
         logger.debug('Stopping the worker')
         self.running = False
         try:
@@ -217,13 +240,15 @@ class Worker(object):
         """Starts the worker
         """
         util.PARAMS = self.params
-
         logger.debug('Starting the worker loop')
 
         # running the pinger
         self.ping.start()
         self.timer.start()
         self.running = True
+
+        # telling the broker we are ready
+        self._reg.send_multipart(['REGISTER', str(os.getpid())])
 
         # arming the exit callback
         if self.max_age != -1:
@@ -265,6 +290,10 @@ def main(args=sys.argv):
     parser.add_argument('--backend', dest='backend',
                         default=DEFAULT_BACKEND,
                         help="ZMQ socket to the broker.")
+
+    parser.add_argument('--register', dest='register',
+                        default=DEFAULT_REG,
+                        help="ZMQ socket for the registration.")
 
     parser.add_argument('target', help="Fully qualified name of the callable.")
 
@@ -309,6 +338,7 @@ def main(args=sys.argv):
     logger.info('Worker registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
     worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat,
+                    register=args.register,
                     params=params, timeout=args.timeout, max_age=args.max_age,
                     max_age_delta=args.max_age_delta)
 

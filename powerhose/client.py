@@ -9,7 +9,7 @@ import contextlib
 
 import zmq
 
-from powerhose.exc import TimeoutError, ExecutionError
+from powerhose.exc import TimeoutError, ExecutionError, NoWorkerError
 from powerhose.job import Job
 from powerhose.util import (send, recv, DEFAULT_FRONTEND, logger,
                             extract_result, timed)
@@ -43,6 +43,7 @@ class Client(object):
                  debug=False, ctx=None):
         self.kill_ctx = ctx is None
         self.ctx = ctx or zmq.Context()
+        self.frontend = frontend
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
         logger.debug('Client connected to %s' % frontend)
@@ -92,6 +93,8 @@ class Client(object):
                 self.timeout_counters[worker_pid] = 0
 
             if not res:
+                if data == 'No worker':
+                    raise NoWorkerError()
                 raise ExecutionError(data)
         except Exception:
             # logged, connector replaced.
@@ -128,6 +131,8 @@ class Client(object):
 
     def close(self):
         #self.master.close()
+        self.master.setsockopt(zmq.LINGER, 0)
+        self.master.close()
 
         if self.kill_ctx:
             self.ctx.destroy(0)

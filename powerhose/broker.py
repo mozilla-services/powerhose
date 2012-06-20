@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 """ Jobs runner.
 """
+import random
 import errno
 import sys
 import traceback
@@ -13,8 +14,8 @@ from zmq.eventloop import ioloop, zmqstream
 import zmq
 
 from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
-                            DEFAULT_BACKEND, DEFAULT_HEARTBEAT, logger,
-                            verify_broker, kill_ghost_brokers)
+                            DEFAULT_BACKEND, DEFAULT_HEARTBEAT, DEFAULT_REG,
+                            logger, verify_broker, kill_ghost_brokers)
 from powerhose.heartbeat import Heartbeat
 from powerhose.exc import DuplicateBrokerError
 
@@ -29,10 +30,12 @@ class Broker(object):
 
     - **frontend**: the ZMQ socket to receive jobs.
     - **backend**: the ZMQ socket to communicate with workers.
-    - **heartbeat**: the ZMQ socket to receive heartbeat requests/
+    - **heartbeat**: the ZMQ socket to receive heartbeat requests.
+    - **register** : the ZMQ socket to register workers
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT, io_threads=DEFAULT_IOTHREADS):
+                 heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
+                 io_threads=DEFAULT_IOTHREADS):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -49,19 +52,23 @@ class Broker(object):
 
         self.context = zmq.Context(io_threads=io_threads)
 
-        # setting up the two sockets
+        # setting up the three sockets
         self._frontend = self.context.socket(zmq.ROUTER)
         self._frontend.identity = 'broker-' + frontend
         self._frontend.bind(frontend)
-        self._backend = self.context.socket(zmq.DEALER)
+        self._backend = self.context.socket(zmq.ROUTER)
         self._backend.bind(backend)
+        self._registration = self.context.socket(zmq.PULL)
+        self._registration.bind(register)
 
-        # setting up the poller
+        # setting up the streams
         self.loop = ioloop.IOLoop()
         self._frontstream = zmqstream.ZMQStream(self._frontend, self.loop)
         self._frontstream.on_recv(self._handle_recv_front)
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
+        self._regstream = zmqstream.ZMQStream(self._registration, self.loop)
+        self._regstream.on_recv(self._handle_reg)
 
         # heartbeat
         self.pong = Heartbeat(heartbeat, io_loop=self.loop, ctx=self.context)
@@ -70,15 +77,40 @@ class Broker(object):
         self.started = False
         self.poll_timeout = None
 
+        # workers register
+        self._workers = []
+
+    def _handle_reg(self, msg):
+        if msg[0] == 'REGISTER':
+            if msg[1] not in self._workers:
+                logger.debug('%r registered' % msg[1])
+                self._workers.append(msg[1])
+        elif msg[0] == 'UNREGISTER':
+            if msg[1] in self._workers:
+                logger.debug('%r removed' % msg[1])
+                self._workers.remove(msg[1])
+
     def _handle_recv_front(self, msg):
         # front => back
-        logger.debug('front -> back')
 
         # if the last part of the message is 'PING', we just PONG back
         # this is used as a health check
         if msg[-1] == 'PING':
             self._frontstream.send_multipart(msg[:-1] + [str(os.getpid())])
             return
+
+        if len(self._workers) == 0:
+            logger.debug('No worker')
+            self._frontstream.send_multipart(msg[:-1] +
+                    ['%d:ERROR:No worker' % os.getpid()])
+            return
+
+        # we want to decide how's going to do the work
+        worker_id = random.choice(self._workers)
+
+        # now we can send to the right guy
+        msg.insert(0, worker_id)
+        logger.debug('front -> back [%s]' % worker_id)
 
         try:
             self._backstream.send_multipart(msg)
@@ -91,7 +123,11 @@ class Broker(object):
 
     def _handle_recv_back(self, msg):
         # back => front
-        logger.debug('front <- back')
+        logger.debug('front <- back [%s]' % msg[0])
+
+        # let's remove the worker id
+        msg = msg[1:]
+
         try:
             self._frontstream.send_multipart(msg)
         except Exception, e:
@@ -159,6 +195,10 @@ def main(args=sys.argv):
                         default=DEFAULT_HEARTBEAT,
                         help="ZMQ socket for the heartbeat.")
 
+    parser.add_argument('--register', dest='register',
+                        default=DEFAULT_REG,
+                        help="ZMQ socket for the registration.")
+
     parser.add_argument('--io-threads', type=int,
                         default=DEFAULT_IOTHREADS,
                         help="Number of I/O threads")
@@ -204,7 +244,8 @@ def main(args=sys.argv):
     logger.info('Starting the broker')
     try:
         broker = Broker(frontend=args.frontend, backend=args.backend,
-                        heartbeat=args.heartbeat, io_threads=args.io_threads)
+                        heartbeat=args.heartbeat, register=args.register,
+                        io_threads=args.io_threads)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')

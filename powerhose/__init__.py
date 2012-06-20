@@ -7,7 +7,8 @@ import argparse
 import time
 
 from powerhose.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
-                            DEFAULT_FRONTEND, encode_params, get_params)
+                            DEFAULT_FRONTEND, encode_params, get_params,
+                            DEFAULT_REG)
 from powerhose.client import DEFAULT_TIMEOUT_MOVF
 from powerhose.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
 
@@ -17,6 +18,7 @@ __all__ = ('get_cluster', 'get_params')
 
 def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
+                register=DEFAULT_REG,
                 working_dir='.', logfile='stdout',
                 debug=False, background=False, worker_params=None,
                 timeout=DEFAULT_TIMEOUT_MOVF, max_age=DEFAULT_MAX_AGE,
@@ -30,7 +32,8 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     - **numprocesses**: The number of workers. Defaults to 5.
     - **frontend**: the ZMQ socket to receive jobs.
     - **backend**: the ZMQ socket to communicate with workers.
-    - **heartbeat**: the ZMQ socket to receive heartbeat requests/
+    - **register** : the ZMQ socket to register workers
+    - **heartbeat**: the ZMQ socket to receive heartbeat requests
     - **working_dir**: The working directory. Defaults to *"."*
     - **logfile**: The file to log into. Defaults to stdout.
     - **debug**: If True, the logs are at the DEBUG level. Defaults to False
@@ -48,7 +51,6 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
       This is done to avoid having all workers quit at the same instant.
     """
     from circus import get_arbiter
-    from circus.stream import StdoutStream, FileStream
 
     python = sys.executable
     if debug:
@@ -71,9 +73,10 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
         worker_cmd += ['--params', params]
 
     if logfile == 'stdout':
-        stream = {'class': StdoutStream}
+        stream = {'class': 'StdoutStream'}
     else:
-        stream = {'class': FileStream}
+        stream = {'class': 'FileStream',
+                  'filename': logfile}
 
     watchers = [{'name': 'broker',
                  'cmd': ' '.join(broker_cmd),
@@ -89,7 +92,6 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
                  'executable': python,
                  'stderr_stream': stream,
                  'stdout_stream': stream
-
                  }
                 ]
 

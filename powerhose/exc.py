@@ -13,3 +13,7 @@ class ExecutionError(Exception):
 
 class DuplicateBrokerError(Exception):
     pass
+
+
+class NoWorkerError(Exception):
+    pass

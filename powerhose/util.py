@@ -18,6 +18,8 @@ from powerhose.exc import TimeoutError
 DEFAULT_FRONTEND = "ipc:///tmp/powerhose-front.ipc"
 DEFAULT_BACKEND = "ipc:///tmp/powerhose-back.ipc"
 DEFAULT_HEARTBEAT = "ipc:///tmp/powerhose-beat.ipc"
+DEFAULT_REG = "ipc:///tmp/powerhose-reg.ipc"
+
 logger = logging.getLogger('powerhose')
 _IPC_FILES = []
 

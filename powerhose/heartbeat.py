@@ -101,7 +101,10 @@ class Stethoscope(threading.Thread):
         """Stops the Pinger"""
         logger.debug('Stopping the Pinger')
         self.running = False
-        self._stream.flush()
+        try:
+            self._stream.flush()
+        except zmq.ZMQError:
+            pass
         if self._stop_loop:
             self.loop.stop()
         if self.isAlive():

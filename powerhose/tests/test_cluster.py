@@ -51,7 +51,10 @@ class TestCluster(unittest.TestCase):
         front = 'ipc:///tmp/f-%s' % callable
         back = 'ipc:///tmp/b-%s' % callable
         hb = 'ipc:///tmp/h-%s' % callable
+        reg = 'ipc:///tmp/r-%s' % callable
+
         cl = get_cluster(callable, frontend=front, backend=back, heartbeat=hb,
+                         register=reg,
                          numprocesses=1, background=True, debug=True,
                          timeout=client.DEFAULT_TIMEOUT_MOVF, **kw)
         cl.start()
