@@ -1,7 +1,11 @@
 CHANGES
 =======
 
-0.7
+0.7 - 2012-06-21
+----------------
+
+- auto-unregistring of dead/slow workers
+
 
 0.6 - 2012-06-20
 ----------------
