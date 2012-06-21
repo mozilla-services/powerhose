@@ -5,6 +5,7 @@ import time
 from powerhose.client import Client
 from powerhose.job import Job
 from powerhose.util import set_logger
+from powerhose.exc import NoWorkerError
 
 
 #set_logger(True)
@@ -22,9 +23,13 @@ while True:
     job = Job(data)
     sys.stdout.write(str(i) +  '-> ')
     sys.stdout.flush()
-    res = client.execute(job)
-    assert res == data
-    sys.stdout.write('OK\n')
+    try:
+        res = client.execute(job)
+    except NoWorkerError:
+        sys.stdout.write('NO WORKER\n')
+    else:
+        assert res == data
+        sys.stdout.write('OK\n')
     sys.stdout.flush()
     i += 1
 

@@ -124,7 +124,7 @@ class Worker(object):
     """
     def __init__(self, target, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
-                 ping_delay=1., ping_retries=3,
+                 ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
         logger.debug('Initializing the worker.')

@@ -25,7 +25,7 @@ class Stethoscope(threading.Thread):
     - **onbeat**: a callable that will be called when a ping succeeds.
       Defaults to None.
     """
-    def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=3.,
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=10.,
                  retries=3,
                  onbeatlost=None, onbeat=None, io_loop=None, ctx=None):
         threading.Thread.__init__(self)
@@ -124,7 +124,7 @@ class Heartbeat(object):
     - **endpoint** : The ZMQ socket to call.
     - **interval** : Interval between two beat.
     """
-    def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=2.,
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=10.,
                  io_loop=None, ctx=None):
         self.loop = io_loop or ioloop.IOLoop.instance()
         self.daemon = True

@@ -9,6 +9,8 @@ import sys
 import traceback
 import argparse
 import os
+import time
+import psutil
 
 from zmq.eventloop import ioloop, zmqstream
 import zmq
@@ -18,6 +20,7 @@ from powerhose.util import (set_logger, register_ipc_file, DEFAULT_FRONTEND,
                             logger, verify_broker, kill_ghost_brokers)
 from powerhose.heartbeat import Heartbeat
 from powerhose.exc import DuplicateBrokerError
+from powerhose.client import DEFAULT_TIMEOUT_MOVF
 
 
 DEFAULT_IOTHREADS = 1
@@ -35,7 +38,8 @@ class Broker(object):
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
-                 io_threads=DEFAULT_IOTHREADS):
+                 io_threads=DEFAULT_IOTHREADS,
+                 worker_timeout=DEFAULT_TIMEOUT_MOVF):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -77,8 +81,16 @@ class Broker(object):
         self.started = False
         self.poll_timeout = None
 
-        # workers register
+        # workers registration and timers
         self._workers = []
+        self._worker_times = {}
+        self.worker_timeout = worker_timeout
+
+    def _remove_worker(self, worker_id):
+        logger.debug('%r removed' % worker_id)
+        self._workers.remove(worker_id)
+        if worker_id in self._worker_times:
+            del self._worker_times[worker_id]
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
@@ -87,30 +99,64 @@ class Broker(object):
                 self._workers.append(msg[1])
         elif msg[0] == 'UNREGISTER':
             if msg[1] in self._workers:
-                logger.debug('%r removed' % msg[1])
-                self._workers.remove(msg[1])
+                self._remove_worker(msg[1])
 
-    def _handle_recv_front(self, msg):
+    def _check_worker(self, worker_id):
+        # box-specific, will do better later XXX
+        exists = psutil.pid_exists(int(worker_id))
+        if not exists:
+            logger.debug('The worker %r is gone' % worker_id)
+            return False
+
+        if worker_id in self._worker_times:
+
+            start, stop = self._worker_times[worker_id]
+            if stop is not None:
+                duration = start - stop
+                if duration > self.worker_timeout:
+                    logger.debug('The worker %r is slow (%.2f)' % (worker_id,
+                            duration))
+                    return False
+        return True
+
+    def _handle_recv_front(self, msg, tentative=0):
         # front => back
-
         # if the last part of the message is 'PING', we just PONG back
         # this is used as a health check
         if msg[-1] == 'PING':
             self._frontstream.send_multipart(msg[:-1] + [str(os.getpid())])
             return
 
-        if len(self._workers) == 0:
-            logger.debug('No worker')
+        #logger.debug('front -> back [choosing a worker]')
+        if tentative == 3:
+            logger.debug('No workers')
             self._frontstream.send_multipart(msg[:-1] +
                     ['%d:ERROR:No worker' % os.getpid()])
             return
 
-        # we want to decide how's going to do the work
-        worker_id = random.choice(self._workers)
+        # we want to decide who's going to do the work
+        found_worker = False
+
+        while not found_worker and len(self._workers) > 0:
+            worker_id = random.choice(self._workers)
+            if not self._check_worker(worker_id):
+                self._remove_worker(worker_id)
+            else:
+                found_worker = True
+
+        if not found_worker:
+            logger.debug('No worker, will try later')
+            later = time.time() + 0.5 + (tentative * 0.2)
+            self.loop.add_timeout(later, lambda: self._handle_recv_front(msg,
+                                    tentative + 1))
+            return
+
+        # start the timer
+        self._worker_times[worker_id] = time.time(), None
 
         # now we can send to the right guy
         msg.insert(0, worker_id)
-        logger.debug('front -> back [%s]' % worker_id)
+        #logger.debug('front -> back [%s]' % worker_id)
 
         try:
             self._backstream.send_multipart(msg)
@@ -123,10 +169,18 @@ class Broker(object):
 
     def _handle_recv_back(self, msg):
         # back => front
-        logger.debug('front <- back [%s]' % msg[0])
+        #logger.debug('front <- back [%s]' % msg[0])
 
-        # let's remove the worker id
+        # let's remove the worker id and track the time it took
+        worker_id = msg[0]
         msg = msg[1:]
+        now = time.time()
+
+        if worker_id in self._worker_times:
+            start, stop = self._worker_times[worker_id]
+            self._worker_times[worker_id] = start, now
+        else:
+            self._worker_times[worker_id] = now, now
 
         try:
             self._frontstream.send_multipart(msg)
