@@ -7,6 +7,8 @@ import os
 import tempfile
 import time
 
+import psutil
+
 from powerhose import get_cluster
 from powerhose.exc import ExecutionError, TimeoutError
 from powerhose import client
@@ -26,8 +28,8 @@ class TestCluster(unittest.TestCase):
         client.DEFAULT_TIMEOUT = .5
         client.DEFAULT_TIMEOUT_MOVF = 1.
         client.DEFAULT_TIMEOUT_OVF = 1
-        self.overflow = str(client.DEFAULT_TIMEOUT + .2)
-        self.moverflow = str(client.DEFAULT_TIMEOUT_MOVF + .2)
+        self.overflow = str(client.DEFAULT_TIMEOUT + .5)
+        self.moverflow = str(client.DEFAULT_TIMEOUT_MOVF + .5)
 
     def tearDown(self):
         logger.debug('stopping cluster')
@@ -85,7 +87,7 @@ class TestCluster(unittest.TestCase):
                                    logfile=file)
 
         # trying a PING
-        time.sleep(.2)
+        time.sleep(.5)
         self.assertTrue(client.ping() is not None)
 
         try:
@@ -123,18 +125,20 @@ class TestCluster(unittest.TestCase):
         # a worker with a max age of 1.5
         client = self._get_cluster('powerhose.tests.jobs.success',
                                    max_age=1.5, max_age_delta=0)
+        time.sleep(.5)
+
         self.assertEqual(client.execute('xx'), 'xx')
 
         cl = self.clusters[-1]
 
         # get the pid of the current worker
-        pid = cl.watchers[1].pids.keys()[0]
+        pid = cl.watchers[1].processes.keys()[0]
 
         # wait 3 seconds
         time.sleep(2.)
 
         # should be different
-        self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])
+        self.assertNotEqual(pid, cl.watchers[1].processes.keys()[0])
 
     def test_worker_max_age2(self):
 
@@ -145,29 +149,34 @@ class TestCluster(unittest.TestCase):
         client.DEFAULT_TIMEOUT_MOVF = 7.
         file = self._get_file()
         _client = self._get_cluster('powerhose.tests.jobs.timeout_overflow',
-                                    max_age=1., max_age_delta=0,
+                                    max_age=5., max_age_delta=0,
                                     logfile=file)
 
         time.sleep(.2)
         cl = self.clusters[-1]
 
         # get the pid of the current worker
-        pid = cl.watchers[1].pids.keys()[0]
+        pid = cl.watchers[1].processes.keys()[0]
 
         # work for 3 seconds
         try:
-            self.assertEqual(_client.execute('2.0'), 'xx')
+            self.assertEqual(_client.execute('6.0'), 'xx')
         except Exception:
             with open(file) as f:
                 print(f.read())
             raise
 
-        # give time to Circus to restart the new process
+        # wait until the process is dead
+        now = time.time()
+        while psutil.pid_exists(int(pid)) and time.time() - now < 10.:
+            time.sleep(.1)
+
+        # now give a chance to the new one to stabilize
         time.sleep(1.)
 
         # should be different
         try:
-            self.assertNotEqual(pid, cl.watchers[1].pids.keys()[0])
+            self.assertNotEqual(pid, cl.watchers[1].processes.keys()[0])
         except Exception:
             with open(file) as f:
                 print(f.read())
