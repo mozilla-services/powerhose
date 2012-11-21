@@ -2,6 +2,7 @@
 #define WORKER_H
 
 #include <zmq.hpp>
+#include <string>
 #include <vector>
 
 

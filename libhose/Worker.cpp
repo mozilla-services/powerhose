@@ -1,6 +1,7 @@
 #include "Worker.h"
 #include "util.h"
 #include <iostream>
+#include <unistd.h>
 
 
 void callSocket(::std::string* request, ::std::string* response, ::zmq::socket_t* socket, int timeout) {
@@ -85,6 +86,7 @@ if (failures >= max_failures) {
     worker->heartbeatFailed = true;
 }
 ::std::cout << "bye!" << ::std::endl;
+return NULL;
 }
 
 

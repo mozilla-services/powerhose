@@ -31,6 +31,11 @@ void SquareWorker::execute(::std::vector< ::std::string>* vreq,  ::std::vector< 
 int main(int argc, const char* const argv[]) {
 
 
+  if(argc != 3) {
+      ::std::cout << "Usage: echo_worker <receiver> <endpoint>" << ::std::endl; 
+      return 1;
+  }
+
   const char* receiver = argv[1];   //"ipc://worker-cpp.ipc";
   const char* endpoint = argv[2];  // "ipc:///tmp/master-routing.ipc";
 
