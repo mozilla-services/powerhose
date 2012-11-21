@@ -1,4 +1,5 @@
 *.o
+*.a
 *.pyc
 *.egg-info
 .Python
@@ -7,3 +8,6 @@ lib
 include
 man
 .tox
+.makepp
+examples/echo_worker
+core

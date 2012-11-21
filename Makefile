@@ -3,15 +3,13 @@ LIBOFILES = $(LIBFILES:%.cpp=%.o)
 DIR = $(CURDIR)/libhose
 INCLUDEDIR = -I$(DIR) -I/opt/local/include
 LIBDIR = -L$(DIR) -L/opt/local/lib
-OPTS = -g -Wall -Wextra 
+OPTS = -g -Wall -Wextra -Wfatal-errors
 LIBS = -lpthread -lzmq -lprotobuf
 
 .PHONY: docs all build buildex proto
 
 
-all:
-	build
-	buildex
+all: build buildex
 
 build:
 	cd $(DIR); rm -f libhose.a; rm -f *.o

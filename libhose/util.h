@@ -1,4 +1,5 @@
 #include <zmq.hpp>
+#include <string>
 #include <vector>
 
 
